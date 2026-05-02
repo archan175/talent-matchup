@@ -7,7 +7,7 @@ import { JobCard } from "@/components/JobCard";
 import { mockJobs, categories } from "@/lib/mock-data";
 import { Search, SlidersHorizontal } from "lucide-react";
 
-export const Route = createFileRoute("/jobs")({
+export const Route = createFileRoute("/jobs/")({
   head: () => ({
     meta: [
       { title: "Browse Jobs — ERUKA" },
