@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { savePostedJob } from "@/lib/local-data";
 
 export const Route = createFileRoute("/post-job")({
   head: () => ({
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/post-job")({
 });
 
 function PostJobPage() {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
@@ -25,6 +28,7 @@ function PostJobPage() {
   const [category, setCategory] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
+  const [message, setMessage] = useState("");
 
   const addSkill = () => {
     if (skillInput.trim() && !skills.includes(skillInput.trim())) {
@@ -123,9 +127,42 @@ function PostJobPage() {
             )}
           </div>
 
-          <Button variant="hero" size="lg" className="w-full" onClick={() => alert("Job posted!")}>
+          <Button
+            variant="hero"
+            size="lg"
+            className="w-full"
+            onClick={() => {
+              setMessage("");
+
+              if (!title.trim() || !description.trim() || !budgetMin || !budgetMax || !deadline || !category) {
+                setMessage("Please fill in all job details.");
+                return;
+              }
+
+              const currentUser = getCurrentUser();
+              const job = {
+                id: `job-${Date.now()}`,
+                title: title.trim(),
+                description: description.trim(),
+                budgetMin: Number(budgetMin),
+                budgetMax: Number(budgetMax),
+                skills,
+                deadline,
+                status: "open" as const,
+                recruiterId: currentUser?.id || currentUser?.email || "guest-recruiter",
+                recruiterName: currentUser?.name || "Guest Recruiter",
+                createdAt: new Date().toISOString().slice(0, 10),
+                bidsCount: 0,
+                category,
+              };
+
+              savePostedJob(job);
+              void navigate({ to: "/jobs/$jobId", params: { jobId: job.id } });
+            }}
+          >
             Post Job
           </Button>
+          {message && <p className="text-sm text-destructive">{message}</p>}
         </CardContent>
       </Card>
     </div>

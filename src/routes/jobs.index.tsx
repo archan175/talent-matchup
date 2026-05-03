@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { JobCard } from "@/components/JobCard";
-import { mockJobs, categories } from "@/lib/mock-data";
+import { categories } from "@/lib/mock-data";
+import { getAllJobs } from "@/lib/local-data";
 import { usdToInr } from "@/lib/currency";
 import { Search, SlidersHorizontal } from "lucide-react";
 
@@ -22,8 +23,9 @@ function JobsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [budgetFilter, setBudgetFilter] = useState<string>("all");
+  const jobs = getAllJobs();
 
-  const filtered = mockJobs.filter((job) => {
+  const filtered = jobs.filter((job) => {
     const budgetMinInr = usdToInr(job.budgetMin);
     const budgetMaxInr = usdToInr(job.budgetMax);
     const matchSearch = search === "" || job.title.toLowerCase().includes(search.toLowerCase()) || job.skills.some((s) => s.toLowerCase().includes(search.toLowerCase()));

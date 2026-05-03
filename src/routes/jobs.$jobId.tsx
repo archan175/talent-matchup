@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { BidCard } from "@/components/BidCard";
-import { mockJobs, mockBids, getLowestBid } from "@/lib/mock-data";
+import { mockJobs } from "@/lib/mock-data";
+import { getAllBids, getAllJobs, getLowestStoredBid, saveBid } from "@/lib/local-data";
+import { getCurrentUser } from "@/lib/auth";
 import { formatUsdAsInr } from "@/lib/currency";
 import { ArrowLeft, DollarSign, Clock, Users, Calendar, MapPin } from "lucide-react";
 
@@ -31,9 +33,9 @@ const statusStyles: Record<string, string> = {
 
 function JobDetailPage() {
   const { jobId } = Route.useParams();
-  const job = mockJobs.find((j) => j.id === jobId);
-  const bids = mockBids.filter((b) => b.jobId === jobId);
-  const lowestBid = getLowestBid(jobId);
+  const job = getAllJobs().find((j) => j.id === jobId);
+  const bids = getAllBids().filter((b) => b.jobId === jobId);
+  const lowestBid = getLowestStoredBid(jobId);
   const lowestBidId = bids.length > 0 ? bids.reduce((a, b) => (a.amount < b.amount ? a : b)).id : null;
 
   const [bidOpen, setBidOpen] = useState(false);
@@ -146,7 +148,7 @@ function JobDetailPage() {
                 <Users className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-xs text-muted-foreground">Bids</p>
-                  <p className="text-sm font-semibold">{job.bidsCount} proposals</p>
+                  <p className="text-sm font-semibold">{bids.length} proposals</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -214,7 +216,37 @@ function JobDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setBidOpen(false)}>Cancel</Button>
-            <Button variant="hero" onClick={() => { alert("Bid submitted!"); setBidOpen(false); }}>
+            <Button
+              variant="hero"
+              onClick={() => {
+                const currentUser = getCurrentUser();
+                const amount = Math.round(Number(bidAmount) / 83);
+
+                saveBid({
+                  id: `bid-${Date.now()}`,
+                  jobId: job.id,
+                  freelancerId: currentUser?.id || currentUser?.email || "guest-freelancer",
+                  freelancerName: currentUser?.name || "Guest Freelancer",
+                  freelancerRating: 0,
+                  freelancerAvatar: (currentUser?.name || "GF")
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase(),
+                  amount,
+                  proposal: bidProposal.trim(),
+                  deliveryTime: Number(bidDelivery),
+                  status: "pending",
+                  createdAt: new Date().toISOString().slice(0, 10),
+                });
+                setBidAmount("");
+                setBidProposal("");
+                setBidDelivery("");
+                setBidOpen(false);
+              }}
+              disabled={!bidAmount || !bidDelivery || !bidProposal.trim()}
+            >
               Submit Bid
             </Button>
           </DialogFooter>

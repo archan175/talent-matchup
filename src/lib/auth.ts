@@ -1,6 +1,7 @@
 export type UserRole = "freelancer" | "recruiter";
 
 export type AuthUser = {
+  id: string;
   name: string;
   email: string;
   password: string;
@@ -43,6 +44,7 @@ export function signUpUser(newUser: AuthUser) {
 
   const userToStore: AuthUser = {
     ...newUser,
+    id: newUser.id || `user-${Date.now()}`,
     email: normalizedEmail,
   };
 

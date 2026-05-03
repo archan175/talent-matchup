@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockJobs, mockBids } from "@/lib/mock-data";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getRegisteredUsers } from "@/lib/auth";
+import { getAllBids, getAllJobs, getPostedJobs, getSavedBids } from "@/lib/local-data";
 import { formatUsdAsInr, usdToInr } from "@/lib/currency";
 import {
   Briefcase,
@@ -50,18 +50,25 @@ function DashboardPage() {
   const [chatInput, setChatInput] = useState("");
   const currentUser = getCurrentUser();
   const displayName = currentUser?.name || "Archan Patel";
+  const allJobs = getAllJobs();
+  const allBids = getAllBids();
+  const postedJobRecords = getPostedJobs();
+  const bidRecords = getSavedBids();
+  const registeredUsers = getRegisteredUsers();
+  const userKey = currentUser?.id || currentUser?.email || "u1";
 
-  const myBids = mockBids.filter((b) => b.freelancerId === "u1");
-  const postedJobs = mockJobs;
-  const activeJobs = mockJobs.filter((j) => j.status === "in-progress" && j.assignedFreelancerId === "u1");
-  const completedJobs = mockJobs.filter((j) => j.status === "completed");
+  const myBids = allBids.filter((b) => b.freelancerId === userKey || (!currentUser && b.freelancerId === "u1"));
+  const postedJobs = allJobs;
+  const activeJobs = allJobs.filter((j) => j.status === "in-progress" && j.assignedFreelancerId === userKey);
+  const completedJobs = allJobs.filter((j) => j.status === "completed");
   const bidsInReview = myBids.filter((bid) => bid.status === "pending").length;
   const totalBidValue = myBids.reduce((total, bid) => total + usdToInr(bid.amount), 0);
   const recruiterSpend = postedJobs.reduce((total, job) => total + usdToInr(job.budgetMax), 0);
   const inboxChats = [
     { id: "c1", name: "Aastha", username: "@aastha", message: "Hi Archan! I reviewed your proposal.", time: "2m", unread: 2 },
-    { id: "c2", name: "Patel Zeel", username: "@patelzeel", message: "Can you share final estimate by tonight?", time: "1h", unread: 1 },
-    { id: "c3", name: "Patel Aryan", username: "@patelaryan", message: "Please update milestone 2 delivery date.", time: "3h", unread: 0 },
+    { id: "c2", name: "Archan Patel", username: "@archanpatel", message: "Can you share final estimate by tonight?", time: "1h", unread: 1 },
+    { id: "c3", name: "Zeel Patel", username: "@zeelpatel", message: "Please update milestone 2 delivery date.", time: "3h", unread: 0 },
+    { id: "c4", name: "Aryan Patel", username: "@aryanpatel", message: "Great progress so far. Keep it up!", time: "Yesterday", unread: 0 },
   ];
   const [chatThreads, setChatThreads] = useState<Record<string, Array<{ sender: "me" | "them"; text: string; time: string }>>>({
     c1: [
@@ -140,11 +147,11 @@ function DashboardPage() {
         ) : (
           <>
             <StatCard icon={Briefcase} label="Posted Jobs" value={postedJobs.length.toString()} note="All time" />
-            <StatCard icon={Users} label="Total Bids" value={mockBids.length.toString()} note="Across active jobs" />
+            <StatCard icon={Users} label="Total Bids" value={allBids.length.toString()} note="Across active jobs" />
             <StatCard
               icon={TrendingUp}
               label="In Progress"
-              value={mockJobs.filter((j) => j.status === "in-progress").length.toString()}
+              value={allJobs.filter((j) => j.status === "in-progress").length.toString()}
               note="Current engagements"
             />
             <StatCard icon={DollarSign} label="Projected Spend" value={formatInrCompact(recruiterSpend)} note="Budget ceiling" />
@@ -188,6 +195,87 @@ function DashboardPage() {
         </Card>
       </div>
 
+      <Card className="gradient-card border-border/50 mb-8">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Stored Data</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="logins" className="space-y-4">
+            <TabsList className="bg-card border border-border/50">
+              <TabsTrigger value="logins">Logins</TabsTrigger>
+              <TabsTrigger value="jobs">Post Jobs</TabsTrigger>
+              <TabsTrigger value="bids">Bids</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="logins">
+              <div className="space-y-2">
+                {registeredUsers.length > 0 ? registeredUsers.map((user) => (
+                  <div key={user.email} className="rounded-lg border border-border/50 bg-card/40 p-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-medium">{user.name}</p>
+                      <Badge variant="secondary">{user.role}</Badge>
+                    </div>
+                    <p className="mt-1 text-muted-foreground">Email: {user.email}</p>
+                    <p className="text-muted-foreground">Password: {user.password}</p>
+                  </div>
+                )) : (
+                  <p className="rounded-lg border border-border/50 bg-card/40 p-4 text-sm text-muted-foreground">
+                    No signup records yet.
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="jobs">
+              <div className="space-y-2">
+                {postedJobRecords.length > 0 ? postedJobRecords.map((job) => (
+                  <div key={job.id} className="rounded-lg border border-border/50 bg-card/40 p-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-medium">{job.title}</p>
+                      <Badge className={statusStyles[job.status]}>{job.status}</Badge>
+                    </div>
+                    <p className="mt-1 text-muted-foreground">Recruiter: {job.recruiterName}</p>
+                    <p className="text-muted-foreground">
+                      Budget: {formatUsdAsInr(job.budgetMin)} - {formatUsdAsInr(job.budgetMax)}
+                    </p>
+                    <p className="text-muted-foreground">Category: {job.category} · Deadline: {job.deadline}</p>
+                  </div>
+                )) : (
+                  <p className="rounded-lg border border-border/50 bg-card/40 p-4 text-sm text-muted-foreground">
+                    No posted job records yet.
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="bids">
+              <div className="space-y-2">
+                {bidRecords.length > 0 ? bidRecords.map((bid) => {
+                  const job = allJobs.find((item) => item.id === bid.jobId);
+                  return (
+                    <div key={bid.id} className="rounded-lg border border-border/50 bg-card/40 p-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-medium">{bid.freelancerName}</p>
+                        <Badge className={statusStyles[bid.status]}>{bid.status}</Badge>
+                      </div>
+                      <p className="mt-1 text-muted-foreground">Job: {job?.title || bid.jobId}</p>
+                      <p className="text-muted-foreground">
+                        Amount: {formatUsdAsInr(bid.amount)} · Delivery: {bid.deliveryTime} days
+                      </p>
+                      <p className="text-muted-foreground">Proposal: {bid.proposal}</p>
+                    </div>
+                  );
+                }) : (
+                  <p className="rounded-lg border border-border/50 bg-card/40 p-4 text-sm text-muted-foreground">
+                    No bid records yet.
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div>
           {role === "freelancer" ? (
@@ -201,7 +289,7 @@ function DashboardPage() {
               <TabsContent value="bids">
                 <div className="space-y-3">
                   {myBids.map((bid) => {
-                    const job = mockJobs.find((j) => j.id === bid.jobId);
+                    const job = allJobs.find((j) => j.id === bid.jobId);
                     return (
                       <Link key={bid.id} to="/jobs/$jobId" params={{ jobId: bid.jobId }}>
                         <Card className="gradient-card border-border/50 hover:border-primary/30 transition-colors cursor-pointer">
@@ -282,8 +370,8 @@ function DashboardPage() {
 
               <TabsContent value="bids">
                 <div className="space-y-3">
-                  {mockBids.map((bid) => {
-                    const job = mockJobs.find((j) => j.id === bid.jobId);
+                  {allBids.map((bid) => {
+                    const job = allJobs.find((j) => j.id === bid.jobId);
                     return (
                       <Card key={bid.id} className="gradient-card border-border/50">
                         <CardContent className="p-5 flex items-center justify-between">

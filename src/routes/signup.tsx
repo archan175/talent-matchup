@@ -51,6 +51,7 @@ function SignupPage() {
               }
 
               const result = signUpUser({
+                id: `user-${Date.now()}`,
                 name: name.trim(),
                 email: email.trim(),
                 password,
