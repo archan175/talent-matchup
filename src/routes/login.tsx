@@ -36,11 +36,11 @@ function LoginPage() {
 
           <form
             className="space-y-4"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               setError("");
 
-              const result = loginUser(email, password);
+              const result = await loginUser(email, password);
               if (!result.ok) {
                 setError(result.message);
                 return;

@@ -131,7 +131,7 @@ function PostJobPage() {
             variant="hero"
             size="lg"
             className="w-full"
-            onClick={() => {
+            onClick={async () => {
               setMessage("");
 
               if (!title.trim() || !description.trim() || !budgetMin || !budgetMax || !deadline || !category) {
@@ -156,7 +156,7 @@ function PostJobPage() {
                 category,
               };
 
-              savePostedJob(job);
+              await savePostedJob(job);
               void navigate({ to: "/jobs/$jobId", params: { jobId: job.id } });
             }}
           >

@@ -41,7 +41,7 @@ function SignupPage() {
 
           <form
             className="space-y-4"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               setError("");
 
@@ -50,7 +50,7 @@ function SignupPage() {
                 return;
               }
 
-              const result = signUpUser({
+              const result = await signUpUser({
                 id: `user-${Date.now()}`,
                 name: name.trim(),
                 email: email.trim(),

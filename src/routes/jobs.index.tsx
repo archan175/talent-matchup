@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { JobCard } from "@/components/JobCard";
-import { categories } from "@/lib/mock-data";
-import { getAllJobs } from "@/lib/local-data";
+import { categories, mockJobs, type Job } from "@/lib/mock-data";
+import { fetchPostedJobs, getAllJobs } from "@/lib/local-data";
 import { usdToInr } from "@/lib/currency";
 import { Search, SlidersHorizontal } from "lucide-react";
 
@@ -23,7 +23,14 @@ function JobsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [budgetFilter, setBudgetFilter] = useState<string>("all");
-  const jobs = getAllJobs();
+  const [jobs, setJobs] = useState<Job[]>(getAllJobs());
+
+  useEffect(() => {
+    void fetchPostedJobs().then((postedJobs) => {
+      const postedIds = new Set(postedJobs.map((job) => job.id));
+      setJobs([...postedJobs, ...mockJobs.filter((job) => !postedIds.has(job.id))]);
+    });
+  }, []);
 
   const filtered = jobs.filter((job) => {
     const budgetMinInr = usdToInr(job.budgetMin);

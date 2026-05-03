@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getCurrentUser, getRegisteredUsers } from "@/lib/auth";
-import { getAllBids, getAllJobs, getPostedJobs, getSavedBids } from "@/lib/local-data";
+import { fetchRegisteredUsers, getCurrentUser, getRegisteredUsers, type AuthUser } from "@/lib/auth";
+import { fetchPostedJobs, fetchSavedBids, getAllBids, getAllJobs, getPostedJobs, getSavedBids } from "@/lib/local-data";
+import { mockBids, mockJobs, type Bid, type Job } from "@/lib/mock-data";
 import { formatUsdAsInr, usdToInr } from "@/lib/currency";
 import {
   Briefcase,
@@ -50,12 +51,28 @@ function DashboardPage() {
   const [chatInput, setChatInput] = useState("");
   const currentUser = getCurrentUser();
   const displayName = currentUser?.name || "Archan Patel";
-  const allJobs = getAllJobs();
-  const allBids = getAllBids();
-  const postedJobRecords = getPostedJobs();
-  const bidRecords = getSavedBids();
-  const registeredUsers = getRegisteredUsers();
+  const [allJobs, setAllJobs] = useState<Job[]>(getAllJobs());
+  const [allBids, setAllBids] = useState<Bid[]>(getAllBids());
+  const [postedJobRecords, setPostedJobRecords] = useState<Job[]>(getPostedJobs());
+  const [bidRecords, setBidRecords] = useState<Bid[]>(getSavedBids());
+  const [registeredUsers, setRegisteredUsers] = useState<AuthUser[]>(getRegisteredUsers());
   const userKey = currentUser?.id || currentUser?.email || "u1";
+
+  useEffect(() => {
+    void fetchRegisteredUsers().then(setRegisteredUsers);
+
+    void fetchPostedJobs().then((postedJobs) => {
+      const postedIds = new Set(postedJobs.map((job) => job.id));
+      setPostedJobRecords(postedJobs);
+      setAllJobs([...postedJobs, ...mockJobs.filter((job) => !postedIds.has(job.id))]);
+    });
+
+    void fetchSavedBids().then((savedBids) => {
+      const savedIds = new Set(savedBids.map((bid) => bid.id));
+      setBidRecords(savedBids);
+      setAllBids([...savedBids, ...mockBids.filter((bid) => !savedIds.has(bid.id))]);
+    });
+  }, []);
 
   const myBids = allBids.filter((b) => b.freelancerId === userKey || (!currentUser && b.freelancerId === "u1"));
   const postedJobs = allJobs;
@@ -216,7 +233,7 @@ function DashboardPage() {
                       <Badge variant="secondary">{user.role}</Badge>
                     </div>
                     <p className="mt-1 text-muted-foreground">Email: {user.email}</p>
-                    <p className="text-muted-foreground">Password: {user.password}</p>
+                    <p className="text-muted-foreground">Password: secured by Supabase Auth</p>
                   </div>
                 )) : (
                   <p className="rounded-lg border border-border/50 bg-card/40 p-4 text-sm text-muted-foreground">

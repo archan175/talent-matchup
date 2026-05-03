@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { BidCard } from "@/components/BidCard";
-import { mockJobs } from "@/lib/mock-data";
-import { getAllBids, getAllJobs, getLowestStoredBid, saveBid } from "@/lib/local-data";
+import { mockBids, mockJobs, type Bid, type Job } from "@/lib/mock-data";
+import { fetchPostedJobs, fetchSavedBids, getAllBids, getAllJobs, saveBid } from "@/lib/local-data";
 import { getCurrentUser } from "@/lib/auth";
 import { formatUsdAsInr } from "@/lib/currency";
 import { ArrowLeft, DollarSign, Clock, Users, Calendar, MapPin } from "lucide-react";
@@ -33,15 +33,29 @@ const statusStyles: Record<string, string> = {
 
 function JobDetailPage() {
   const { jobId } = Route.useParams();
-  const job = getAllJobs().find((j) => j.id === jobId);
-  const bids = getAllBids().filter((b) => b.jobId === jobId);
-  const lowestBid = getLowestStoredBid(jobId);
+  const [jobs, setJobs] = useState<Job[]>(getAllJobs());
+  const [allBids, setAllBids] = useState<Bid[]>(getAllBids());
+  const job = jobs.find((j) => j.id === jobId);
+  const bids = allBids.filter((b) => b.jobId === jobId);
+  const lowestBid = bids.length > 0 ? Math.min(...bids.map((bid) => bid.amount)) : null;
   const lowestBidId = bids.length > 0 ? bids.reduce((a, b) => (a.amount < b.amount ? a : b)).id : null;
 
   const [bidOpen, setBidOpen] = useState(false);
   const [bidAmount, setBidAmount] = useState("");
   const [bidProposal, setBidProposal] = useState("");
   const [bidDelivery, setBidDelivery] = useState("");
+
+  useEffect(() => {
+    void fetchPostedJobs().then((postedJobs) => {
+      const postedIds = new Set(postedJobs.map((postedJob) => postedJob.id));
+      setJobs([...postedJobs, ...mockJobs.filter((mockJob) => !postedIds.has(mockJob.id))]);
+    });
+
+    void fetchSavedBids().then((savedBids) => {
+      const savedIds = new Set(savedBids.map((bid) => bid.id));
+      setAllBids([...savedBids, ...mockBids.filter((bid) => !savedIds.has(bid.id))]);
+    });
+  }, []);
 
   if (!job) {
     return (
@@ -218,11 +232,11 @@ function JobDetailPage() {
             <Button variant="ghost" onClick={() => setBidOpen(false)}>Cancel</Button>
             <Button
               variant="hero"
-              onClick={() => {
+              onClick={async () => {
                 const currentUser = getCurrentUser();
                 const amount = Math.round(Number(bidAmount) / 83);
 
-                saveBid({
+                const newBid = {
                   id: `bid-${Date.now()}`,
                   jobId: job.id,
                   freelancerId: currentUser?.id || currentUser?.email || "guest-freelancer",
@@ -239,7 +253,10 @@ function JobDetailPage() {
                   deliveryTime: Number(bidDelivery),
                   status: "pending",
                   createdAt: new Date().toISOString().slice(0, 10),
-                });
+                } as const;
+
+                await saveBid(newBid);
+                setAllBids((currentBids) => [newBid, ...currentBids]);
                 setBidAmount("");
                 setBidProposal("");
                 setBidDelivery("");
