@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Mail, Lock, User, ArrowRight, Briefcase } from "lucide-react";
-import { signUpUser } from "@/lib/auth";
+import { signInWithGoogle, signUpUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -135,6 +135,24 @@ function SignupPage() {
             </Button>
             {error && <p className="text-sm text-destructive">{error}</p>}
           </form>
+
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border/60" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border/60" />
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              setError("");
+              const result = await signInWithGoogle();
+              if (!result.ok) setError(result.message);
+            }}
+          >
+            Continue with Google
+          </Button>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}

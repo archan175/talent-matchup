@@ -60,6 +60,92 @@ function saveCurrentUser(user: AuthUser) {
   window.localStorage.setItem(SESSION_KEY, user.email.trim().toLowerCase());
 }
 
+function getAppOrigin() {
+  if (!isBrowser()) return "";
+  return window.location.origin;
+}
+
+export async function signInWithGoogle() {
+  if (!isSupabaseConfigured || !supabase) {
+    return { ok: false as const, message: "Supabase is not configured yet." };
+  }
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${getAppOrigin()}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    return { ok: false as const, message: error.message };
+  }
+
+  return { ok: true as const };
+}
+
+export async function sendPasswordReset(email: string) {
+  if (!isSupabaseConfigured || !supabase) {
+    return { ok: false as const, message: "Supabase is not configured yet." };
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    redirectTo: `${getAppOrigin()}/reset-password`,
+  });
+
+  if (error) {
+    return { ok: false as const, message: error.message };
+  }
+
+  return { ok: true as const };
+}
+
+export async function updatePassword(password: string) {
+  if (!isSupabaseConfigured || !supabase) {
+    return { ok: false as const, message: "Supabase is not configured yet." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { ok: false as const, message: error.message };
+  }
+
+  return { ok: true as const };
+}
+
+export async function completeSupabaseLogin() {
+  if (!isSupabaseConfigured || !supabase) {
+    return { ok: false as const, message: "Supabase is not configured yet." };
+  }
+
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user?.email) {
+    return { ok: false as const, message: error?.message || "Could not complete login." };
+  }
+
+  const authUser = data.user;
+  const profile: AuthUser = {
+    id: authUser.id,
+    name:
+      authUser.user_metadata?.name ||
+      authUser.user_metadata?.full_name ||
+      authUser.email.split("@")[0],
+    email: authUser.email,
+    role: authUser.user_metadata?.role || "freelancer",
+  };
+
+  await supabase.from("profiles").upsert({
+    id: profile.id,
+    name: profile.name,
+    email: profile.email,
+    role: profile.role,
+  });
+
+  saveCurrentUser(profile);
+  return { ok: true as const };
+}
+
 export async function signUpUser(newUser: AuthUser) {
   if (isSupabaseConfigured && supabase) {
     const normalizedEmail = newUser.email.trim().toLowerCase();

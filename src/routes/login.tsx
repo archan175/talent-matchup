@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Mail, Lock, ArrowRight, Briefcase } from "lucide-react";
-import { loginUser } from "@/lib/auth";
+import { loginUser, signInWithGoogle } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -63,7 +63,12 @@ function LoginPage() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-foreground">Password</label>
+                <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -80,6 +85,24 @@ function LoginPage() {
             </Button>
             {error && <p className="text-sm text-destructive">{error}</p>}
           </form>
+
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border/60" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border/60" />
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              setError("");
+              const result = await signInWithGoogle();
+              if (!result.ok) setError(result.message);
+            }}
+          >
+            Continue with Google
+          </Button>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
