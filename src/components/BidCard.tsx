@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Clock, DollarSign } from "lucide-react";
 import type { Bid } from "@/lib/mock-data";
+import { formatUsdAsInr } from "@/lib/currency";
 
 const statusStyles: Record<string, string> = {
   pending: "bg-warning/15 text-warning border-warning/30",
@@ -57,7 +58,7 @@ export function BidCard({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1 text-sm">
               <DollarSign className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-foreground">${bid.amount.toLocaleString()}</span>
+              <span className="font-semibold text-foreground">{formatUsdAsInr(bid.amount)}</span>
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />

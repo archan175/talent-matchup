@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { BidCard } from "@/components/BidCard";
 import { mockJobs, mockBids, getLowestBid } from "@/lib/mock-data";
+import { formatUsdAsInr } from "@/lib/currency";
 import { ArrowLeft, DollarSign, Clock, Users, Calendar, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/jobs/$jobId")({
@@ -96,7 +97,7 @@ function JobDetailPage() {
               Bids ({bids.length})
               {lowestBid && (
                 <span className="ml-3 text-sm font-normal text-success">
-                  Lowest: ${lowestBid.toLocaleString()}
+                  Lowest: {formatUsdAsInr(lowestBid)}
                 </span>
               )}
             </h2>
@@ -131,7 +132,7 @@ function JobDetailPage() {
                 <DollarSign className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-xs text-muted-foreground">Budget</p>
-                  <p className="text-lg font-bold">${job.budgetMin.toLocaleString()} – ${job.budgetMax.toLocaleString()}</p>
+                  <p className="text-lg font-bold">{formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -177,17 +178,18 @@ function JobDetailPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-sm font-medium text-foreground">Bid Amount ($)</label>
+              <label className="text-sm font-medium text-foreground">Bid Amount (INR)</label>
               <Input
                 type="number"
-                placeholder="e.g. 3500"
+                placeholder="e.g. 250000"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
                 className="mt-1 bg-input/50"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Budget: ${job.budgetMin.toLocaleString()} – ${job.budgetMax.toLocaleString()}
+                Budget: {formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}
               </p>
+              <p className="mt-1 text-xs text-muted-foreground/80">Enter bid amount in INR.</p>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Delivery Time (days)</label>

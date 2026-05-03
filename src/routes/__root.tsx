@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import appCss from "../styles.css?url";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { SupportChatWidget } from "@/components/SupportChatWidget";
 
 function NotFoundComponent() {
   return (
@@ -31,16 +32,26 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "ERUKA — Where Talent Meets Opportunity" },
-      { name: "description", content: "ERUKA is a modern freelancing platform connecting top freelancers with innovative businesses through a professional bidding system." },
+      {
+        name: "description",
+        content:
+          "ERUKA is a modern freelancing platform connecting top freelancers with innovative businesses through a professional bidding system.",
+      },
       { property: "og:title", content: "ERUKA — Where Talent Meets Opportunity" },
-      { property: "og:description", content: "Find top freelancers or land your next project on ERUKA." },
+      {
+        property: "og:description",
+        content: "Find top freelancers or land your next project on ERUKA.",
+      },
       { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -70,6 +81,7 @@ function RootComponent() {
         <Outlet />
       </main>
       <Footer />
+      <SupportChatWidget />
     </div>
   );
 }

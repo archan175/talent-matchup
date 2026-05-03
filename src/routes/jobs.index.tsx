@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { JobCard } from "@/components/JobCard";
 import { mockJobs, categories } from "@/lib/mock-data";
+import { usdToInr } from "@/lib/currency";
 import { Search, SlidersHorizontal } from "lucide-react";
 
 export const Route = createFileRoute("/jobs/")({
@@ -23,12 +24,14 @@ function JobsPage() {
   const [budgetFilter, setBudgetFilter] = useState<string>("all");
 
   const filtered = mockJobs.filter((job) => {
+    const budgetMinInr = usdToInr(job.budgetMin);
+    const budgetMaxInr = usdToInr(job.budgetMax);
     const matchSearch = search === "" || job.title.toLowerCase().includes(search.toLowerCase()) || job.skills.some((s) => s.toLowerCase().includes(search.toLowerCase()));
     const matchCategory = category === "All" || job.category === category;
     const matchBudget = budgetFilter === "all" ||
-      (budgetFilter === "low" && job.budgetMax <= 2000) ||
-      (budgetFilter === "mid" && job.budgetMin >= 2000 && job.budgetMax <= 5000) ||
-      (budgetFilter === "high" && job.budgetMin >= 5000);
+      (budgetFilter === "low" && budgetMaxInr <= 200000) ||
+      (budgetFilter === "mid" && budgetMinInr >= 200000 && budgetMaxInr <= 500000) ||
+      (budgetFilter === "high" && budgetMinInr >= 500000);
     return matchSearch && matchCategory && matchBudget;
   });
 
@@ -59,9 +62,9 @@ function JobsPage() {
               className="rounded-md border border-border/50 bg-card px-3 py-2 text-sm text-foreground"
             >
               <option value="all">All Budgets</option>
-              <option value="low">Under $2K</option>
-              <option value="mid">$2K – $5K</option>
-              <option value="high">$5K+</option>
+              <option value="low">Under Rs. 2L</option>
+              <option value="mid">Rs. 2L - Rs. 5L</option>
+              <option value="high">Rs. 5L+</option>
             </select>
           </div>
         </div>

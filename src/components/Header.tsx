@@ -1,7 +1,8 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Briefcase, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { getCurrentUser, logoutUser } from "@/lib/auth";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -13,6 +14,8 @@ const navLinks = [
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const currentUser = getCurrentUser();
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50">
@@ -41,12 +44,38 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link to="/login">
-            <Button variant="ghost" size="sm">Log In</Button>
-          </Link>
-          <Link to="/signup">
-            <Button variant="hero" size="sm">Sign Up</Button>
-          </Link>
+          {currentUser ? (
+            <>
+              <Link to="/profile">
+                <Button variant="ghost" size="sm">
+                  {currentUser.name}
+                </Button>
+              </Link>
+              <Button
+                variant="hero"
+                size="sm"
+                onClick={() => {
+                  logoutUser();
+                  void navigate({ to: "/" });
+                }}
+              >
+                Log Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">
+                  Log In
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button variant="hero" size="sm">
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -70,14 +99,40 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            <div className="mt-2 flex gap-2">
-              <Link to="/login" className="flex-1">
-                <Button variant="ghost" size="sm" className="w-full">Log In</Button>
-              </Link>
-              <Link to="/signup" className="flex-1">
-                <Button variant="hero" size="sm" className="w-full">Sign Up</Button>
-              </Link>
-            </div>
+            {currentUser ? (
+              <div className="mt-2 flex gap-2">
+                <Link to="/profile" className="flex-1" onClick={() => setMobileOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full">
+                    {currentUser.name}
+                  </Button>
+                </Link>
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    logoutUser();
+                    void navigate({ to: "/" });
+                  }}
+                >
+                  Log Out
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-2 flex gap-2">
+                <Link to="/login" className="flex-1">
+                  <Button variant="ghost" size="sm" className="w-full">
+                    Log In
+                  </Button>
+                </Link>
+                <Link to="/signup" className="flex-1">
+                  <Button variant="hero" size="sm" className="w-full">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
           </nav>
         </div>
       )}

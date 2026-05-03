@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Calendar, Briefcase, Mail, Edit } from "lucide-react";
+import { Star, Calendar, Briefcase, Mail, Edit } from "lucide-react";
 import { mockUsers } from "@/lib/mock-data";
+import { getCurrentUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -16,7 +17,30 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const user = mockUsers[0]; // Alex Chen
+  const currentUser = getCurrentUser();
+  const fallbackUser = mockUsers[0];
+  const user = currentUser
+    ? {
+        ...fallbackUser,
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+      }
+    : null;
+
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
+        <h1 className="text-2xl font-bold text-foreground">Log in to view your profile</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          You need to be signed in before accessing this page.
+        </p>
+        <Link to="/login" className="mt-6 inline-block">
+          <Button variant="hero">Go to Login</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -71,7 +95,9 @@ function ProfilePage() {
               <h2 className="font-semibold mb-3">Skills</h2>
               <div className="flex flex-wrap gap-2">
                 {user.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary" className="text-sm">{skill}</Badge>
+                  <Badge key={skill} variant="secondary" className="text-sm">
+                    {skill}
+                  </Badge>
                 ))}
               </div>
             </CardContent>

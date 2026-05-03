@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Clock, DollarSign, Users, ArrowDown } from "lucide-react";
 import type { Job } from "@/lib/mock-data";
 import { getLowestBid } from "@/lib/mock-data";
+import { formatUsdAsInr } from "@/lib/currency";
 
 const statusStyles: Record<string, string> = {
   open: "bg-success/15 text-success border-success/30",
@@ -51,13 +52,13 @@ export function JobCard({ job }: { job: Job }) {
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <DollarSign className="h-3.5 w-3.5" />
-              <span>${job.budgetMin.toLocaleString()} – ${job.budgetMax.toLocaleString()}</span>
+              <span>{formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}</span>
             </div>
             <div className="flex items-center gap-3">
               {lowestBid && (
                 <div className="flex items-center gap-1 text-xs text-success">
                   <ArrowDown className="h-3 w-3" />
-                  <span>${lowestBid.toLocaleString()}</span>
+                  <span>{formatUsdAsInr(lowestBid)}</span>
                 </div>
               )}
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
