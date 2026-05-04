@@ -1,0 +1,57 @@
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const { sendMailSafe } = require('./utils/mailer');
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+// basic IP rate limiter (adjust window and max for your needs)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 login requests per windowMs
+  message: { message: 'Too many login attempts. Try again later.' }
+});
+
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Email and password required.' });
+
+    // TODO: replace this with your DB lookup
+    // Example users array (password hashed for "Password123")
+    const users = [
+      { id: '1', email: 'archanpatel734440@gmail.com', passwordHash: '$2a$10$u1yqv6eG9q2kG2eZ1m0YhOJQz7sR8c4e0wFJ1vSgE0r5s9xqYjK9i' }
+    ];
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) return res.status(401).json({ message: 'Invalid email or password.' });
+
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    // create JWT
+    const token = jwt.sign({ sub: user.id, email: user.email }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
+
+    // Optionally send a login notification email (non-blocking)
+    sendMailSafe({
+      to: user.email,
+      subject: 'New sign-in to your account',
+      text: `You signed in at ${new Date().toISOString()} from IP ${req.ip}`
+    }).catch(err => console.warn('Mail send warning:', err.message));
+
+    res.json({ token, user: { id: user.id, email: user.email } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+const port = process.env.PORT || 3001;
+app.listen(port, () => console.log(`Auth server listening on ${port}`));

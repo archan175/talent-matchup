@@ -53,28 +53,38 @@ function JobsPage() {
 
       {/* Filters */}
       <div className="mb-6 space-y-4">
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search jobs by title or skill..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-card border-border/50"
+              className="pl-10 bg-white border rounded-md shadow-sm"
             />
           </div>
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="rounded-md border border-border/50 bg-white px-3 py-2 text-sm text-foreground"
+            >
+              <option value="All">All categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
             <select
               value={budgetFilter}
               onChange={(e) => setBudgetFilter(e.target.value)}
-              className="rounded-md border border-border/50 bg-card px-3 py-2 text-sm text-foreground"
+              className="rounded-md border border-border/50 bg-white px-3 py-2 text-sm text-foreground"
             >
               <option value="all">All Budgets</option>
               <option value="low">Under Rs. 2L</option>
               <option value="mid">Rs. 2L - Rs. 5L</option>
               <option value="high">Rs. 5L+</option>
             </select>
+            <Button size="sm" variant="outline">Rating</Button>
           </div>
         </div>
 

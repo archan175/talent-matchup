@@ -10,6 +10,19 @@ export type AuthUser = {
   role: UserRole;
 };
 
+function mapSupabaseError(err: any): string {
+  if (!err) return "An unknown error occurred.";
+  // Supabase sometimes returns 429 or messages referencing rate limits
+  if (err.status === 429 || /rate|limit|quota/i.test(err.message || "")) {
+    return "Email provider rate limit reached. Try again later or contact support.";
+  }
+  // Authentication-specific messages
+  if (/invalid login|invalid email|invalid password/i.test(err.message || "")) {
+    return "Invalid email or password.";
+  }
+  return err.message || String(err);
+}
+
 const USERS_KEY = "eruka_users";
 const SESSION_KEY = "eruka_session";
 const PROFILE_KEY = "eruka_profile";
@@ -69,7 +82,6 @@ export async function signInWithGoogle() {
   if (!isSupabaseConfigured || !supabase) {
     return { ok: false as const, message: "Supabase is not configured yet." };
   }
-
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -78,7 +90,7 @@ export async function signInWithGoogle() {
   });
 
   if (error) {
-    return { ok: false as const, message: error.message };
+    return { ok: false as const, message: mapSupabaseError(error) };
   }
 
   return { ok: true as const };
@@ -94,7 +106,7 @@ export async function sendPasswordReset(email: string) {
   });
 
   if (error) {
-    return { ok: false as const, message: error.message };
+    return { ok: false as const, message: mapSupabaseError(error) };
   }
 
   return { ok: true as const };
@@ -108,7 +120,7 @@ export async function updatePassword(password: string) {
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
-    return { ok: false as const, message: error.message };
+    return { ok: false as const, message: mapSupabaseError(error) };
   }
 
   return { ok: true as const };
@@ -118,20 +130,32 @@ export async function completeSupabaseLogin() {
   if (!isSupabaseConfigured || !supabase) {
     return { ok: false as const, message: "Supabase is not configured yet." };
   }
+  // First try to parse session from the OAuth redirect URL (contains tokens)
+  try {
+    // getSessionFromUrl will parse the access token from the URL hash and set the session
+    // in the client. If there's nothing to parse it returns { data: null }
+    // This is important for OAuth providers where the redirect includes tokens.
+    // @ts-ignore - method exists on Supabase client; keeping runtime-safe call
+    const fromUrl = await (supabase.auth as any).getSessionFromUrl?.();
+    // ignore errors here, we'll call getUser below
+  } catch (e) {
+    // ignore
+  }
 
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user?.email) {
-    return { ok: false as const, message: error?.message || "Could not complete login." };
+    return { ok: false as const, message: mapSupabaseError(error) || "Could not complete login." };
   }
 
   const authUser = data.user;
+  const safeEmail = authUser.email || "unknown@example.com";
   const profile: AuthUser = {
     id: authUser.id,
     name:
       authUser.user_metadata?.name ||
       authUser.user_metadata?.full_name ||
-      authUser.email.split("@")[0],
-    email: authUser.email,
+      safeEmail.split("@")[0],
+    email: safeEmail,
     role: authUser.user_metadata?.role || "freelancer",
   };
 
@@ -161,7 +185,7 @@ export async function signUpUser(newUser: AuthUser) {
     });
 
     if (error) {
-      return { ok: false as const, message: error.message };
+      return { ok: false as const, message: mapSupabaseError(error) };
     }
 
     const authUser = data.user;
@@ -184,7 +208,7 @@ export async function signUpUser(newUser: AuthUser) {
     });
 
     if (profileError && data.session) {
-      return { ok: false as const, message: profileError.message };
+      return { ok: false as const, message: mapSupabaseError(profileError) };
     }
 
     saveCurrentUser(profile);
@@ -218,13 +242,18 @@ export async function loginUser(email: string, password: string) {
       password,
     });
 
+    // If Supabase returned an error, prefer returning its message directly
     if (error) {
-      return { ok: false as const, message: error.message };
+      // common auth status: 400/401 for invalid credentials
+      if (error.status === 400 || error.status === 401) {
+        return { ok: false as const, message: "Incorrect email or password. If you forgot it use 'Forgot password'." };
+      }
+      return { ok: false as const, message: mapSupabaseError(error) };
     }
 
     const authUser = data.user;
     if (!authUser) {
-      return { ok: false as const, message: "Invalid email or password." };
+      return { ok: false as const, message: "Authentication failed. Please verify your credentials." };
     }
 
     const { data: profileRow } = await supabase

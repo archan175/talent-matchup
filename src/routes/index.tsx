@@ -62,29 +62,110 @@ function Index() {
 
   return (
     <div>
-      {/* Intro */}
-      <section className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.62_0.21_255/0.2),transparent_60%)]" />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="relative px-4 text-center"
-        >
-          <h1 className="text-gradient text-6xl font-black tracking-tight sm:text-8xl lg:text-9xl">
-            ERUKA
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Where talent meets opportunity. Scroll down to explore the platform.
-          </p>
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity }}
-            className="mt-8 flex justify-center text-primary"
-          >
-            <ChevronsDown className="h-6 w-6" />
-          </motion.div>
-        </motion.div>
+      {/* HERO */}
+      <section className="bg-background">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+            <div>
+              <h1 className="text-4xl font-extrabold text-secondary sm:text-5xl">Find the Right Talent. Faster.</h1>
+              <p className="mt-4 text-lg text-muted-foreground">A marketplace connecting businesses with vetted freelancers — post projects, receive bids, and hire with confidence.</p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link to="/jobs">
+                  <Button className="bg-primary text-white rounded-md px-5 py-3 shadow-md hover:shadow-lg">Hire Talent</Button>
+                </Link>
+                <Link to="/jobs">
+                  <Button variant="outline" className="rounded-md px-5 py-3">Find Work</Button>
+                </Link>
+              </div>
+
+              <div className="mt-8 flex gap-4">
+                <div className="rounded-lg bg-white p-4 shadow-sm w-36">
+                  <div className="text-sm text-muted-foreground">10K+</div>
+                  <div className="text-lg font-bold text-secondary">Freelancers</div>
+                </div>
+                <div className="rounded-lg bg-white p-4 shadow-sm w-36">
+                  <div className="text-sm text-muted-foreground">2K+</div>
+                  <div className="text-lg font-bold text-secondary">Projects</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="order-first lg:order-last">
+              <div className="rounded-lg bg-white p-6 shadow-lg">
+                <div className="grid grid-cols-3 gap-4 items-stretch">
+                  {/* left: small KPI tiles */}
+                  <div className="col-span-1 flex flex-col gap-3">
+                    <div className="rounded-md bg-gradient-to-r from-primary/10 to-primary/5 p-3">
+                      <div className="text-xs text-muted-foreground">Active</div>
+                      <div className="text-lg font-bold text-secondary">12.3K</div>
+                      <div className="text-[11px] text-success">+3.2% this week</div>
+                    </div>
+                    <div className="rounded-md bg-gradient-to-r from-accent/10 to-accent/5 p-3">
+                      <div className="text-xs text-muted-foreground">Earnings</div>
+                      <div className="text-lg font-bold text-secondary">$28M</div>
+                      <div className="text-[11px] text-success">+8% MoM</div>
+                    </div>
+                    <div className="rounded-md bg-gradient-to-r from-foreground/5 to-foreground/2 p-3">
+                      <div className="text-xs text-muted-foreground">Jobs</div>
+                      <div className="text-lg font-bold text-secondary">3.2K</div>
+                      <div className="text-[11px] text-muted-foreground">Open · 120 new</div>
+                    </div>
+                  </div>
+
+                  {/* center: mini line chart */}
+                  <div className="col-span-2 flex flex-col gap-3">
+                    <div className="h-28 w-full rounded-md bg-gradient-to-r from-primary/20 to-accent/10 p-3">
+                      <svg viewBox="0 0 200 60" className="w-full h-full">
+                        <defs>
+                          <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stopColor="#60a5fa" stopOpacity="0.6" />
+                            <stop offset="1" stopColor="#34d399" stopOpacity="0.08" />
+                          </linearGradient>
+                        </defs>
+                        <path d="M0,40 C20,30 40,20 60,28 C80,36 100,12 120,18 C140,24 160,8 180,22 C200,36 220,30 240,20" fill="url(#g1)" transform="scale(0.8,1)" stroke="none" />
+                        <polyline points="0,42 24,34 48,24 72,32 96,40 120,20 144,28 168,18 192,30" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="scale(0.95,1)" />
+                      </svg>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <div className="flex-1 rounded-md bg-card/30 p-2">
+                        <div className="text-xs text-muted-foreground">Top Hiring Categories</div>
+                        <div className="mt-1 text-sm font-semibold text-foreground">Design · Frontend · AI</div>
+                      </div>
+                      <div className="w-36 rounded-md bg-card/30 p-2">
+                        <div className="text-xs text-muted-foreground">Response</div>
+                        <div className="mt-1 text-sm font-semibold text-foreground">96%</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* footer: recent jobs list */}
+                <div className="mt-4 border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">Recent Postings</div>
+                    <div className="text-[11px] text-primary">View all</div>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="text-foreground">Landing page design</div>
+                      <div className="text-xs text-muted-foreground">3 bids</div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="text-foreground">React developer for dashboard</div>
+                      <div className="text-xs text-muted-foreground">5 bids</div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="text-foreground">AI model prototype</div>
+                      <div className="text-xs text-muted-foreground">2 bids</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Hero Details */}

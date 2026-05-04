@@ -18,16 +18,16 @@ export function Header() {
   const currentUser = getCurrentUser();
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-border/50">
+    <header className="sticky top-0 z-50 bg-white/60 backdrop-blur-md border-b shadow-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-hero">
-            <Briefcase className="h-5 w-5 text-primary-foreground" />
+        <Link to="/" className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
+            <Briefcase className="h-5 w-5" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-foreground">ERUKA</span>
+          <span className="text-lg font-semibold text-secondary">ERUKA</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+  <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.to}
@@ -43,7 +43,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+  <div className="hidden items-center gap-3 md:flex">
           {currentUser ? (
             <>
               <Link to="/profile">

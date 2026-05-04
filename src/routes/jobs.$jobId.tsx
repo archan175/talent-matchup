@@ -125,8 +125,27 @@ function JobDetailPage() {
                     bid={bid}
                     isLowest={bid.id === lowestBidId}
                     showActions={true}
-                    onAccept={() => alert(`Accepted bid from ${bid.freelancerName}`)}
-                    onReject={() => alert(`Rejected bid from ${bid.freelancerName}`)}
+                    onAccept={async () => {
+                      // mark bid accepted, others rejected, assign freelancer to job
+                      const updatedBid = { ...bid, status: "accepted" } as const;
+                      await import("@/lib/local-data").then((m) => m.upsertBid(updatedBid));
+
+                      // update local state: mark other bids as rejected
+                      setAllBids((current) => current.map((b) => (b.id === bid.id ? updatedBid : { ...b, status: b.id === bid.id ? "accepted" : "rejected" })));
+
+                      // update job to assigned freelancer and status
+                      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, assignedFreelancerId: bid.freelancerId, status: "in-progress" } : j)));
+                      // persist job change
+                      await import("@/lib/local-data").then((m) => m.savePostedJob({ ...(job as any), assignedFreelancerId: bid.freelancerId, status: "in-progress" }));
+
+                      // refresh bids in UI
+                      setAllBids((current) => current.map((b) => (b.id === bid.id ? { ...b, status: "accepted" } : b)));
+                    }}
+                    onReject={async () => {
+                      const updatedBid = { ...bid, status: "rejected" } as const;
+                      await import("@/lib/local-data").then((m) => m.upsertBid(updatedBid));
+                      setAllBids((current) => current.map((b) => (b.id === bid.id ? updatedBid : b)));
+                    }}
                   />
                 ))}
               </div>

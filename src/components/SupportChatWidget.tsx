@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { MessageCircle, Send, X, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,23 @@ export function SupportChatWidget() {
 
   const canSend = useMemo(() => input.trim().length > 0, [input]);
 
+  const replyTimersRef = useRef<number[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      // clear any pending reply timers on unmount
+      replyTimersRef.current.forEach((t) => clearTimeout(t));
+      replyTimersRef.current = [];
+    };
+  }, []);
+
+  const clearPendingReplies = () => {
+    replyTimersRef.current.forEach((t) => clearTimeout(t));
+    replyTimersRef.current = [];
+    setIsTyping(false);
+  };
+
   const sendMessage = (text: string) => {
     const cleanText = text.trim();
     if (!cleanText) return;
@@ -66,21 +83,36 @@ export function SupportChatWidget() {
       text: cleanText,
     };
 
-    const supportMessage: ChatMessage = {
-      id: `${Date.now()}-s`,
-      sender: "support",
-      text: getSupportReply(cleanText),
-    };
-
-    setMessages((prev) => [...prev, userMessage, supportMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
+
+    // schedule a simulated support reply after a random 15-30s delay
+    const min = 15000;
+    const max = 30000;
+    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+
+    setIsTyping(true);
+    const timer = window.setTimeout(() => {
+      const supportMessage: ChatMessage = {
+        id: `${Date.now()}-s`,
+        sender: "support",
+        text: getSupportReply(cleanText),
+      };
+
+      setMessages((prev) => [...prev, supportMessage]);
+      setIsTyping(false);
+      // remove this timer from the ref
+      replyTimersRef.current = replyTimersRef.current.filter((t) => t !== timer);
+    }, delay) as unknown as number;
+
+    replyTimersRef.current.push(timer);
   };
 
   return (
     <div className="fixed bottom-5 right-5 z-50">
       {isOpen ? (
         <Card className="w-[22rem] border-border/60 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-border/50 p-3">
+            <div className="flex items-center justify-between border-b border-border/50 p-3">
             <div className="flex items-center gap-2">
               <div className="rounded-md bg-primary/15 p-1.5">
                 <Bot className="h-4 w-4 text-primary" />
@@ -90,7 +122,14 @@ export function SupportChatWidget() {
                 <p className="text-xs text-success">Online now</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                clearPendingReplies();
+                setIsOpen(false);
+              }}
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -109,6 +148,11 @@ export function SupportChatWidget() {
                   {message.text}
                 </div>
               ))}
+              {isTyping && (
+                <div className="max-w-[65%] animate-pulse rounded-lg px-3 py-2 text-xs bg-card/80 text-foreground border border-border/40">
+                  ERUKA is typing...
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -148,7 +192,11 @@ export function SupportChatWidget() {
           type="button"
           variant="hero"
           className="h-12 w-12 rounded-full shadow-xl"
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            // clear any old timers when re-opening to avoid duplicate replies
+            clearPendingReplies();
+            setIsOpen(true);
+          }}
           aria-label="Open live support chat"
         >
           <MessageCircle className="h-5 w-5" />

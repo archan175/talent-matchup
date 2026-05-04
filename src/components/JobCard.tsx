@@ -17,7 +17,7 @@ export function JobCard({ job }: { job: Job }) {
 
   return (
     <Link to="/jobs/$jobId" params={{ jobId: job.id }}>
-      <Card className="group gradient-card border-border/50 transition-all duration-300 hover:border-primary/40 hover:glow-primary cursor-pointer">
+      <Card className="group bg-white rounded-lg shadow-sm border border-border/50 transition-transform transform hover:-translate-y-1 hover:shadow-md cursor-pointer">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -68,6 +68,9 @@ export function JobCard({ job }: { job: Job }) {
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
                 <span>{job.deadline}</span>
+              </div>
+              <div>
+                <button className="ml-2 rounded-md bg-primary text-white px-3 py-1 text-sm hover:opacity-95">Apply</button>
               </div>
             </div>
           </div>

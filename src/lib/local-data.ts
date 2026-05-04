@@ -133,11 +133,42 @@ export async function saveBid(bid: Bid) {
     if (!error) return;
   }
 
+  // For local fallback, prepend the new bid
   writeJson(BIDS_KEY, [bid, ...getSavedBids()]);
 }
 
+export async function upsertBid(bid: Bid) {
+  if (isSupabaseConfigured && supabase) {
+    // use upsert to update existing bids or insert new
+    const { error } = await supabase.from("bids").upsert({
+      id: bid.id,
+      job_id: bid.jobId,
+      freelancer_id: bid.freelancerId,
+      freelancer_name: bid.freelancerName,
+      freelancer_rating: bid.freelancerRating,
+      freelancer_avatar: bid.freelancerAvatar,
+      amount: bid.amount,
+      proposal: bid.proposal,
+      delivery_time: bid.deliveryTime,
+      status: bid.status,
+    });
+
+    if (!error) return;
+  }
+
+  // Local storage fallback: replace existing bid by id or add
+  const existing = getSavedBids();
+  const next = [bid, ...existing.filter((b) => b.id !== bid.id)];
+  writeJson(BIDS_KEY, next);
+}
+
 export function getAllBids(): Bid[] {
-  return [...getSavedBids(), ...mockBids];
+  const saved = getSavedBids();
+  // Pick a small random subset of mock bids on each load so the list varies per refresh
+  const shuffled = mockBids.slice().sort(() => Math.random() - 0.5);
+  const pickCount = Math.min(mockBids.length, Math.max(1, Math.floor(Math.random() * 3) + 1)); // 1-3
+  const randomMocks = shuffled.slice(0, pickCount);
+  return [...saved, ...randomMocks];
 }
 
 export function getLowestStoredBid(jobId: string): number | null {
