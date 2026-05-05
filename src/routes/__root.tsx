@@ -1,4 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { BUILD_COMMIT } from "@/lib/buildInfo";
 import appCss from "../styles.css?url";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -74,6 +76,37 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    function onAuth() {
+      // force a root re-render so all children re-read getCurrentUser()
+      setTick((t) => t + 1);
+    }
+    window.addEventListener('eruka:auth-changed', onAuth);
+    return () => window.removeEventListener('eruka:auth-changed', onAuth);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = window.localStorage.getItem('eruka_build');
+      const reloadedFlag = window.sessionStorage.getItem('eruka_reloaded_once');
+      if (stored && stored !== BUILD_COMMIT && !reloadedFlag) {
+        // another user agent or older assets were loaded previously — update and reload once
+        window.localStorage.setItem('eruka_build', BUILD_COMMIT);
+        // set a session flag so we only reload once per tab
+        window.sessionStorage.setItem('eruka_reloaded_once', '1');
+        // reload to fetch latest assets
+        window.location.reload();
+      } else if (!stored) {
+        window.localStorage.setItem('eruka_build', BUILD_COMMIT);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
