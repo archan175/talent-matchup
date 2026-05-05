@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +58,7 @@ const features = [
 ];
 
 function Index() {
+  const navigate = useNavigate();
   const featuredJobs = mockJobs.filter((j) => j.status === "open").slice(0, 3);
 
   return (
@@ -71,9 +72,22 @@ function Index() {
               <p className="mt-4 text-lg text-muted-foreground">Post jobs, receive bids, and collaborate seamlessly.</p>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Link to="/post-job">
-                  <Button className="bg-primary text-white rounded-md px-5 py-3 shadow-md hover:shadow-lg">Hire Talent</Button>
-                </Link>
+                  <Button
+                    className="bg-primary text-white rounded-md px-5 py-3 shadow-md hover:shadow-lg"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      try {
+                        // eslint-disable-next-line no-console
+                        console.debug('[ui] Hire Talent clicked');
+                      } catch {}
+                      void navigate({ to: "/post-job" });
+                    }}
+                  >
+                    Hire Talent
+                  </Button>
+                  {/* keep a link as graceful fallback for non-JS or if programmatic navigation fails */}
+                  <Link to="/post-job" className="sr-only">Post a job</Link>
                 <Link to="/jobs">
                   <Button variant="outline" className="rounded-md px-5 py-3">Find Work</Button>
                 </Link>

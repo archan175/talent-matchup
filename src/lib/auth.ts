@@ -71,6 +71,13 @@ function saveCurrentUser(user: AuthUser) {
   if (!isBrowser()) return;
   window.localStorage.setItem(PROFILE_KEY, JSON.stringify(user));
   window.localStorage.setItem(SESSION_KEY, user.email.trim().toLowerCase());
+  // Debug: trace what profile is saved during login flows
+  try {
+    // eslint-disable-next-line no-console
+    console.debug('[auth] saveCurrentUser', { profileKey: PROFILE_KEY, sessionKey: SESSION_KEY, user });
+  } catch (e) {
+    // ignore
+  }
 
   try {
     // Also keep the registered users list in sync so getCurrentUser can find the profile
@@ -86,6 +93,12 @@ function saveCurrentUser(user: AuthUser) {
     saveRegisteredUsers(users);
   } catch (e) {
     // best-effort only
+  }
+  try {
+    // notify the UI that auth state changed so non-mounted components can refresh
+    window.dispatchEvent(new CustomEvent('eruka:auth-changed', { detail: { user } }));
+  } catch (e) {
+    // ignore
   }
 }
 
@@ -244,9 +257,9 @@ export async function signUpUser(newUser: AuthUser) {
     id: newUser.id || `user-${Date.now()}`,
     email: normalizedEmail,
   };
-
   saveRegisteredUsers([...users, userToStore]);
-  setSession(userToStore.email);
+  // Persist the full profile and session so the UI sees a consistent current user
+  saveCurrentUser(userToStore);
   return { ok: true as const };
 }
 
@@ -297,8 +310,8 @@ export async function loginUser(email: string, password: string) {
   if (!match) {
     return { ok: false as const, message: "Invalid email or password." };
   }
-
-  setSession(match.email);
+  // Persist as current user so PROFILE_KEY is available and UI renders consistently
+  saveCurrentUser(match);
   return { ok: true as const };
 }
 
@@ -314,6 +327,11 @@ export function logoutUser() {
   }
   window.localStorage.removeItem(SESSION_KEY);
   window.localStorage.removeItem(PROFILE_KEY);
+  try {
+    window.dispatchEvent(new CustomEvent('eruka:auth-changed', { detail: { user: null } }));
+  } catch (e) {
+    // ignore
+  }
 }
 
 export function getCurrentUser(): AuthUser | null {
@@ -322,7 +340,12 @@ export function getCurrentUser(): AuthUser | null {
   const rawProfile = window.localStorage.getItem(PROFILE_KEY);
   if (rawProfile) {
     try {
-      return JSON.parse(rawProfile) as AuthUser;
+      const parsed = JSON.parse(rawProfile) as AuthUser;
+      try {
+        // eslint-disable-next-line no-console
+        console.debug('[auth] getCurrentUser (from profile)', parsed);
+      } catch {}
+      return parsed;
     } catch {
       window.localStorage.removeItem(PROFILE_KEY);
     }
@@ -332,6 +355,10 @@ export function getCurrentUser(): AuthUser | null {
   if (!currentEmail) return null;
 
   const users = getRegisteredUsers();
+  try {
+    // eslint-disable-next-line no-console
+    console.debug('[auth] getCurrentUser (from users list)', { currentEmail, usersLength: users.length });
+  } catch {}
   return users.find((user) => user.email.toLowerCase() === currentEmail.toLowerCase()) ?? null;
 }
 

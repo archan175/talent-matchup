@@ -3,6 +3,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { getCurrentUser, logoutUser } from "@/lib/auth";
+import { useEffect } from "react";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -13,9 +14,19 @@ const navLinks = [
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [tick, setTick] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+
+  useEffect(() => {
+    function onAuth() {
+      // force re-render to pick up updated getCurrentUser()
+      setTick((t) => t + 1);
+    }
+    window.addEventListener('eruka:auth-changed', onAuth);
+    return () => window.removeEventListener('eruka:auth-changed', onAuth);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm">
