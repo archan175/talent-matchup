@@ -1,5 +1,6 @@
 import { Briefcase } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { BUILD_COMMIT, BUILD_TIME } from "@/lib/buildInfo";
 
 export function Footer() {
   return (
@@ -21,7 +22,7 @@ export function Footer() {
             <Link to="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
           </div>
           <p className="text-xs text-muted-foreground/60">
-            © 2026 ERUKA. All rights reserved.
+            © 2026 ERUKA. All rights reserved. • build {BUILD_COMMIT}
           </p>
         </div>
       </div>
