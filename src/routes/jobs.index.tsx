@@ -7,6 +7,7 @@ import { JobCard } from "@/components/JobCard";
 import { categories, mockJobs, type Job } from "@/lib/mock-data";
 import { fetchPostedJobs, getAllJobs } from "@/lib/local-data";
 import { usdToInr } from "@/lib/currency";
+import { getCurrentUser } from "@/lib/auth";
 import { Search, SlidersHorizontal } from "lucide-react";
 
 export const Route = createFileRoute("/jobs/")({
@@ -24,6 +25,8 @@ function JobsPage() {
   const [category, setCategory] = useState("All");
   const [budgetFilter, setBudgetFilter] = useState<string>("all");
   const [jobs, setJobs] = useState<Job[]>(getAllJobs());
+  const currentUser = getCurrentUser();
+  const [onlyMine, setOnlyMine] = useState(false);
 
   useEffect(() => {
     void fetchPostedJobs().then((postedJobs) => {
@@ -43,6 +46,8 @@ function JobsPage() {
       (budgetFilter === "high" && budgetMinInr >= 500000);
     return matchSearch && matchCategory && matchBudget;
   });
+
+  const shown = onlyMine ? filtered.filter((j) => currentUser && (j.recruiterId === currentUser.id || j.recruiterName === currentUser.name)) : filtered;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -107,8 +112,18 @@ function JobsPage() {
         {filtered.length} job{filtered.length !== 1 ? "s" : ""} found
       </p>
 
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} />
+            Show only my posts
+          </label>
+        </div>
+        <div className="text-sm text-muted-foreground">{shown.length} job{shown.length !== 1 ? 's' : ''} shown</div>
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((job) => (
+        {shown.map((job) => (
           <JobCard key={job.id} job={job} />
         ))}
       </div>

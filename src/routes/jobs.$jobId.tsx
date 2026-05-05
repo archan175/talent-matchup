@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { mockBids, mockJobs, type Bid, type Job } from "@/lib/mock-data";
 import { fetchPostedJobs, fetchSavedBids, getAllBids, getAllJobs, saveBid } from "@/lib/local-data";
 import { getCurrentUser } from "@/lib/auth";
 import { formatUsdAsInr } from "@/lib/currency";
-import { ArrowLeft, DollarSign, Clock, Users, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Clock, Users, Calendar, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/jobs/$jobId")({
   head: ({ params }) => {
@@ -33,8 +33,10 @@ const statusStyles: Record<string, string> = {
 
 function JobDetailPage() {
   const { jobId } = Route.useParams();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>(getAllJobs());
   const [allBids, setAllBids] = useState<Bid[]>(getAllBids());
+  const currentUser = getCurrentUser();
   const job = jobs.find((j) => j.id === jobId);
   const bids = allBids.filter((b) => b.jobId === jobId);
   const lowestBid = bids.length > 0 ? Math.min(...bids.map((bid) => bid.amount)) : null;
@@ -55,6 +57,27 @@ function JobDetailPage() {
       const savedIds = new Set(savedBids.map((bid) => bid.id));
       setAllBids([...savedBids, ...mockBids.filter((bid) => !savedIds.has(bid.id))]);
     });
+  }, []);
+
+  // listen for simulated bid accept events to refresh bids/messages
+  useEffect(() => {
+    const onBidUpdated = () => {
+      void fetchSavedBids().then((savedBids) => {
+        const savedIds = new Set(savedBids.map((bid) => bid.id));
+        setAllBids([...savedBids, ...mockBids.filter((bid) => !savedIds.has(bid.id))]);
+      });
+    };
+    const onMessageInserted = () => {
+      // no-op here; chat page listens for messages. We still refresh bids to pick up accepted state
+      onBidUpdated();
+    };
+
+    window.addEventListener('eruka:bid-updated', onBidUpdated);
+    window.addEventListener('eruka:message-inserted', onMessageInserted);
+    return () => {
+      window.removeEventListener('eruka:bid-updated', onBidUpdated);
+      window.removeEventListener('eruka:message-inserted', onMessageInserted);
+    };
   }, []);
 
   if (!job) {
@@ -164,7 +187,7 @@ function JobDetailPage() {
           <Card className="gradient-card border-border/50 sticky top-20">
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
+                <span className="text-primary text-lg">₹</span>
                 <div>
                   <p className="text-xs text-muted-foreground">Budget</p>
                   <p className="text-lg font-bold">{formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}</p>
@@ -193,8 +216,19 @@ function JobDetailPage() {
               </div>
 
               {job.status === "open" && (
-                <Button variant="hero" className="w-full" onClick={() => setBidOpen(true)}>
-                  Place a Bid
+                <Button
+                  variant="hero"
+                  className="w-full"
+                  onClick={() => {
+                    if (!currentUser) {
+                      // require login before placing bids
+                      void navigate({ to: "/login" });
+                      return;
+                    }
+                    setBidOpen(true);
+                  }}
+                >
+                  {currentUser ? "Place a Bid" : "Sign in to place a bid"}
                 </Button>
               )}
             </CardContent>
@@ -252,16 +286,22 @@ function JobDetailPage() {
             <Button
               variant="hero"
               onClick={async () => {
-                const currentUser = getCurrentUser();
+                // double-check login before submitting
+                const user = getCurrentUser();
+                if (!user) {
+                  void navigate({ to: "/login" });
+                  return;
+                }
+
                 const amount = Math.round(Number(bidAmount) / 83);
 
                 const newBid = {
                   id: `bid-${Date.now()}`,
                   jobId: job.id,
-                  freelancerId: currentUser?.id || currentUser?.email || "guest-freelancer",
-                  freelancerName: currentUser?.name || "Guest Freelancer",
+                  freelancerId: user.id || user.email,
+                  freelancerName: user.name,
                   freelancerRating: 0,
-                  freelancerAvatar: (currentUser?.name || "GF")
+                  freelancerAvatar: (user.name || "GF")
                     .split(" ")
                     .map((part) => part[0])
                     .join("")
@@ -281,7 +321,7 @@ function JobDetailPage() {
                 setBidDelivery("");
                 setBidOpen(false);
               }}
-              disabled={!bidAmount || !bidDelivery || !bidProposal.trim()}
+              disabled={!bidAmount || !bidDelivery || !bidProposal.trim() || !currentUser}
             >
               Submit Bid
             </Button>

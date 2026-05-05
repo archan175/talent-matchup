@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, MessageCircle } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { fetchMessagesForUser } from "@/lib/local-data";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -22,17 +24,26 @@ const conversations = [
   { id: "c4", name: "Aryan Patel", avatar: "AP", lastMessage: "Please update milestone 2.", time: "Yesterday", unread: 0 },
 ];
 
-const messages = [
-  { id: "m1", senderId: "u2", text: "Hi Alex! I saw your bid on the e-commerce project.", time: "10:30 AM" },
-  { id: "m2", senderId: "u1", text: "Hi Aastha! Yes, I'm very interested. I have extensive experience building e-commerce platforms.", time: "10:32 AM" },
-  { id: "m3", senderId: "u2", text: "Your portfolio looks great. Can you share more details about the tech stack you'd use?", time: "10:35 AM" },
-  { id: "m4", senderId: "u1", text: "Sure! I'd use React with TypeScript for the frontend, Node.js backend, and MongoDB for the database. For payments, I'll integrate Stripe.", time: "10:38 AM" },
-  { id: "m5", senderId: "u2", text: "That sounds perfect. Can you start next week?", time: "10:40 AM" },
-];
+// conversation list state can live inside the component if needed
 
 function ChatPage() {
   const [selectedChat, setSelectedChat] = useState("c1");
   const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState<Array<{ id: string; senderId: string; receiverId: string; text: string; createdAt?: string }>>([]);
+  const currentUser = getCurrentUser();
+
+  useEffect(() => {
+    if (!currentUser) return;
+    void fetchMessagesForUser(currentUser.id || currentUser.email).then((res) => {
+      setMessages(res as any[]);
+    });
+
+    const onInserted = () => {
+      void fetchMessagesForUser(currentUser.id || currentUser.email).then((res) => setMessages(res as any[]));
+    };
+    window.addEventListener('eruka:message-inserted', onInserted);
+    return () => window.removeEventListener('eruka:message-inserted', onInserted);
+  }, [currentUser]);
   const activeConversation = conversations.find((conv) => conv.id === selectedChat) || conversations[0];
 
   return (
@@ -100,7 +111,7 @@ function ChatPage() {
                 }`}>
                   <p className="text-sm">{msg.text}</p>
                   <p className={`mt-1 text-[10px] ${msg.senderId === "u1" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                    {msg.time}
+                    {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                   </p>
                 </div>
               </div>

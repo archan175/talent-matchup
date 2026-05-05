@@ -61,9 +61,11 @@ function ProfilePage() {
                 <span className="text-xs text-muted-foreground">({user.completedJobs} jobs)</span>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Edit className="h-3.5 w-3.5" /> Edit Profile
-            </Button>
+            <a href="/dashboard#edit" className="inline-block">
+              <Button variant="outline" size="sm" className="gap-1">
+                <Edit className="h-3.5 w-3.5" /> Edit Profile
+              </Button>
+            </a>
           </div>
         </CardContent>
       </Card>

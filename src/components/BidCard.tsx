@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Clock, DollarSign } from "lucide-react";
+import { Star, Clock } from "lucide-react";
 import type { Bid } from "@/lib/mock-data";
 import { formatUsdAsInr } from "@/lib/currency";
 
@@ -47,9 +47,14 @@ export function BidCard({
               </div>
             </div>
           </div>
-          <Badge className={`text-[10px] ${statusStyles[bid.status]}`}>
-            {bid.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {bid.status === 'pending' && (
+              <div className="h-3 w-3 rounded-full bg-warning animate-pulse" />
+            )}
+            <Badge className={`text-[10px] ${statusStyles[bid.status]}`}>
+              {bid.status}
+            </Badge>
+          </div>
         </div>
 
         <p className="mt-3 text-sm text-muted-foreground">{bid.proposal}</p>
@@ -57,7 +62,7 @@ export function BidCard({
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1 text-sm">
-              <DollarSign className="h-4 w-4 text-primary" />
+              <span className="text-primary font-semibold">₹</span>
               <span className="font-semibold text-foreground">{formatUsdAsInr(bid.amount)}</span>
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">

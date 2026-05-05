@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { savePostedJob } from "@/lib/local-data";
+import { categories } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/post-job")({
   head: () => ({
@@ -28,6 +29,7 @@ function PostJobPage() {
   const [category, setCategory] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
+  const commonSkills = ["React", "TypeScript", "Node.js", "Python", "Figma", "AWS"];
   const [message, setMessage] = useState("");
 
   const addSkill = () => {
@@ -112,6 +114,11 @@ function PostJobPage() {
               <Button variant="secondary" size="icon" onClick={addSkill}>
                 <Plus className="h-4 w-4" />
               </Button>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {commonSkills.map((s) => (
+                <button key={s} type="button" className="rounded-md border px-2 py-1 text-sm" onClick={() => setSkills((prev) => prev.includes(s) ? prev : [...prev, s])}>{s}</button>
+              ))}
             </div>
             {skills.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">

@@ -67,11 +67,11 @@ function Index() {
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
             <div>
-              <h1 className="text-4xl font-extrabold text-secondary sm:text-5xl">Find the Right Talent. Faster.</h1>
-              <p className="mt-4 text-lg text-muted-foreground">A marketplace connecting businesses with vetted freelancers — post projects, receive bids, and hire with confidence.</p>
+              <h1 className="text-4xl font-extrabold text-foreground sm:text-5xl">Hire Top Freelancers or Find Work Easily</h1>
+              <p className="mt-4 text-lg text-muted-foreground">Post jobs, receive bids, and collaborate seamlessly.</p>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Link to="/jobs">
+                <Link to="/post-job">
                   <Button className="bg-primary text-white rounded-md px-5 py-3 shadow-md hover:shadow-lg">Hire Talent</Button>
                 </Link>
                 <Link to="/jobs">
@@ -169,6 +169,53 @@ function Index() {
       </section>
 
       {/* Hero Details */}
+      {/* How it works */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <div className="text-center mb-8">
+          <h3 className="text-xl font-semibold">How it works</h3>
+          <p className="text-sm text-muted-foreground">Three simple steps to hire or find work</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="card-default p-6 text-center">
+            <div className="text-2xl font-bold">1</div>
+            <div className="mt-2 font-medium">Post Job</div>
+            <div className="mt-1 text-sm text-muted-foreground">Describe your project and budget.</div>
+          </div>
+          <div className="card-default p-6 text-center">
+            <div className="text-2xl font-bold">2</div>
+            <div className="mt-2 font-medium">Get Bids</div>
+            <div className="mt-1 text-sm text-muted-foreground">Review proposals and timelines.</div>
+          </div>
+          <div className="card-default p-6 text-center">
+            <div className="text-2xl font-bold">3</div>
+            <div className="mt-2 font-medium">Hire</div>
+            <div className="mt-1 text-sm text-muted-foreground">Choose the best freelancer and start work.</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Top Freelancers */}
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Top Freelancers</h3>
+          <Link to="/jobs" className="text-sm text-primary">View all</Link>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {/* placeholder freelancer cards */}
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="card-default p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-muted" />
+                <div>
+                  <div className="font-medium">Freelancer {i + 1}</div>
+                  <div className="text-xs text-muted-foreground">Design · React · Figma</div>
+                  <div className="text-xs text-muted-foreground mt-1">⭐ 4.{8 - i}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.62_0.21_255/0.15),transparent_60%)]" />
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24">

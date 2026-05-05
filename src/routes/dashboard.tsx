@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +16,7 @@ import {
   FileText,
   CheckCircle,
   Clock,
-  DollarSign,
+  
   TrendingUp,
   Users,
   ArrowUpRight,
@@ -25,6 +27,7 @@ import {
   SlidersHorizontal,
   Send,
 } from "lucide-react";
+import { generateSmartReply } from "@/lib/reply";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -50,7 +53,12 @@ function DashboardPage() {
   const [selectedChatId, setSelectedChatId] = useState("c1");
   const [chatInput, setChatInput] = useState("");
   const currentUser = getCurrentUser();
-  const displayName = currentUser?.name || "Archan Patel";
+  const [currentUserState, setCurrentUserState] = useState<AuthUser | null>(currentUser);
+  const displayName = currentUserState?.name || "Archan Patel";
+  const [avatarData, setAvatarData] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("eruka_avatar");
+  });
   const [allJobs, setAllJobs] = useState<Job[]>(getAllJobs());
   const [allBids, setAllBids] = useState<Bid[]>(getAllBids());
   const [postedJobRecords, setPostedJobRecords] = useState<Job[]>(getPostedJobs());
@@ -99,8 +107,52 @@ function DashboardPage() {
     c3: [{ sender: "them", text: "Please update milestone 2 delivery date.", time: "10:05 AM" }],
     c4: [{ sender: "them", text: "Great progress so far. Keep it up!", time: "Yesterday" }],
   });
+  const CHAT_STORAGE_KEY = currentUser?.email ? `eruka_chats_${currentUser.email}` : 'eruka_chats_guest';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = window.localStorage.getItem(CHAT_STORAGE_KEY);
+    if (raw) {
+      try {
+        setChatThreads(JSON.parse(raw));
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatThreads));
+  }, [chatThreads]);
   const activeChat = inboxChats.find((chat) => chat.id === selectedChatId) || inboxChats[0];
   const activeMessages = chatThreads[selectedChatId] || [];
+
+  // typing and reply timers for inbox chat simulation
+  const [chatTyping, setChatTyping] = useState<Record<string, boolean>>({});
+  const chatTimers = useRef<number[]>([]);
+
+  // profile modal
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [editName, setEditName] = useState(currentUserState?.name || "");
+  const [editEmail, setEditEmail] = useState(currentUserState?.email || "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      chatTimers.current.forEach((t) => clearTimeout(t));
+      chatTimers.current = [];
+    };
+  }, []);
+
+  // open profile modal if URL hash indicates edit
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#edit') {
+      setEditName(currentUserState?.name || '');
+      setEditEmail(currentUserState?.email || '');
+      setProfileOpen(true);
+      // clear the hash so it doesn't reopen on navigation
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, [currentUserState]);
 
   const handleSendMessage = () => {
     const content = chatInput.trim();
@@ -111,6 +163,60 @@ function DashboardPage() {
       [selectedChatId]: [...(prev[selectedChatId] || []), { sender: "me", text: content, time: "Now" }],
     }));
     setChatInput("");
+    // schedule an automated reply from the other participant after 8-12s
+    // show typing for the selected chat
+    setChatTyping((t) => ({ ...t, [selectedChatId]: true }));
+    // shorter, more responsive delay
+    const min = 2000;
+    const max = 5000;
+    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+    const timer = window.setTimeout(() => {
+      // use functional updater to get latest history
+      setChatThreads((prev) => {
+        const history = (prev[selectedChatId] || []).map((m) => m.text);
+        const reply = generateSmartReply(content, { role: currentUser?.role, history });
+        const replyMessage: { sender: "me" | "them"; text: string; time: string } = { sender: "them", text: reply, time: "Now" };
+        const next = { ...prev } as Record<string, { sender: "me" | "them"; text: string; time: string }[]>;
+        next[selectedChatId] = [...(prev[selectedChatId] || []), replyMessage];
+        // persist to localStorage
+        if (typeof window !== 'undefined') window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
+      setChatTyping((t) => ({ ...t, [selectedChatId]: false }));
+      chatTimers.current = chatTimers.current.filter((x) => x !== (timer as number));
+    }, delay) as unknown as number;
+    chatTimers.current.push(timer as number);
+  };
+
+  // Quick action handlers
+  const handleQuickUpdateProfile = () => {
+    setEditName(currentUserState?.name || '');
+    setEditEmail(currentUserState?.email || '');
+    setProfileOpen(true);
+    // move focus to modal after a tiny delay
+    setTimeout(() => {
+      const el = document.getElementById('profile-avatar-input');
+      if (el) (el as HTMLElement).focus?.();
+    }, 120);
+  };
+
+  const handleQuickOpenMessages = (chatId?: string) => {
+    const id = chatId || inboxChats[0]?.id || selectedChatId;
+    if (!id) return;
+    setSelectedChatId(id);
+    // ensure messages container and input are focused/visible
+    setTimeout(() => {
+      const container = document.getElementById('dashboard-messages-container');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+      const inputEl = document.getElementById('dashboard-chat-input') as HTMLInputElement | null;
+      inputEl?.focus?.();
+    }, 150);
+  };
+
+  const handleQuickReviewOpportunities = () => {
+    window.location.href = '/jobs';
   };
 
   return (
@@ -125,6 +231,46 @@ function DashboardPage() {
             <Badge variant="secondary">Response Rate 96%</Badge>
             <Badge variant="secondary">Profile Strength: Expert</Badge>
             <Badge variant="secondary">Last active: 5 min ago</Badge>
+          </div>
+          
+          {/* Inline editable profile card */}
+          <div className="mt-4">
+            <Card className="w-full max-w-sm">
+              <CardContent className="flex gap-4 items-center">
+                <div>
+                  {avatarData ? (
+                    <img src={avatarData} alt="avatar" className="h-16 w-16 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">{(currentUserState?.name || "U").split(" ").map(p=>p[0]).join("").slice(0,2)}</div>
+                  )}
+                  <input id="avatar" type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                      const base = String(reader.result || "");
+                      window.localStorage.setItem('eruka_avatar', base);
+                      setAvatarData(base);
+                    };
+                    reader.readAsDataURL(file);
+                  }} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">{currentUserState?.name || "Your Name"}</div>
+                  <div className="text-xs text-muted-foreground">{currentUserState?.email || "you@example.com"}</div>
+                  <div className="mt-2 flex gap-2">
+                    <label htmlFor="avatar">
+                      <Button size="sm" variant="outline">Change Avatar</Button>
+                    </label>
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      setEditName(currentUserState?.name || "");
+                      setEditEmail(currentUserState?.email || "");
+                      setProfileOpen(true);
+                    }}>Edit Profile</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
@@ -141,25 +287,201 @@ function DashboardPage() {
           </Button>
           <Link to="/jobs">
             <Button size="sm" variant="outline" className="gap-1">
-              Explore Jobs <ArrowUpRight className="h-3.5 w-3.5" />
+              Browse Jobs <ArrowUpRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
           <Link to="/post-job">
             <Button size="sm" variant="hero">
-              Post New Job
+              Post Job
             </Button>
           </Link>
+          <Button size="sm" variant="ghost" onClick={async () => {
+            const newName = prompt('Enter your display name', currentUserState?.name || '');
+            const newEmail = prompt('Enter your email', currentUserState?.email || '');
+            if (newName == null || newEmail == null) return;
+            const { updateProfile } = await import('@/lib/auth');
+            const res = await updateProfile({ name: newName, email: newEmail });
+            if (res.ok) setCurrentUserState((prev) => prev ? { ...prev, name: newName, email: newEmail } : prev);
+            else alert(res.message || 'Could not update profile');
+          }}>Edit Profile</Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+  {/* Top stats */}
+  <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="rounded-lg bg-white p-4 shadow-sm">
+          <div className="text-xs text-muted-foreground">Jobs</div>
+          <div className="text-2xl font-bold text-foreground">{allJobs.length}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">Open · {allJobs.filter(j=>j.status==='open').length}</div>
+        </div>
+            {/* Edit profile modal */}
+            {profileOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/40" onClick={() => setProfileOpen(false)} />
+                <div className="relative w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold">Edit Profile</h3>
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <label className="text-sm">Display name</label>
+                      <input className="mt-1 w-full rounded-md border px-3 py-2" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-sm">Email</label>
+                      <input className="mt-1 w-full rounded-md border px-3 py-2" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-sm">Avatar</label>
+                      <div className="mt-2 flex items-center gap-3">
+                        {avatarData ? <img src={avatarData} className="h-12 w-12 rounded-full object-cover" alt="avatar" /> : <div className="h-12 w-12 rounded-full bg-muted" />}
+                        <input id="profile-avatar-input" type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingAvatar(true);
+                          try {
+                            const reader = new FileReader();
+                            reader.onload = async () => {
+                              const base = String(reader.result || "");
+                              // if Supabase configured, upload to storage
+                              const { isSupabaseConfigured, supabase } = await import('@/lib/supabase');
+                              if (isSupabaseConfigured && supabase) {
+                                try {
+                                  const name = `avatar-${Date.now()}`;
+                                  const { data, error } = await (supabase.storage as any).from('avatars').upload(name, file, { upsert: true });
+                                  if (!error) {
+                                    const { data: urlData } = await supabase.storage.from('avatars').getPublicUrl(data.path);
+                                    window.localStorage.setItem('eruka_avatar', urlData.publicUrl);
+                                    setAvatarData(urlData.publicUrl);
+                                    toast.success('Avatar uploaded');
+                                  } else {
+                                    // fallback to base64
+                                    window.localStorage.setItem('eruka_avatar', base);
+                                    setAvatarData(base);
+                                    toast('Avatar saved locally');
+                                  }
+                                } catch (err) {
+                                  window.localStorage.setItem('eruka_avatar', base);
+                                  setAvatarData(base);
+                                  toast('Avatar saved locally');
+                                }
+                              } else {
+                                window.localStorage.setItem('eruka_avatar', base);
+                                setAvatarData(base);
+                                toast('Avatar saved locally');
+                              }
+                              setUploadingAvatar(false);
+                            };
+                            reader.readAsDataURL(file);
+                          } catch (e) {
+                            setUploadingAvatar(false);
+                            toast.error('Could not upload avatar');
+                          }
+                        }} />
+                        <label htmlFor="profile-avatar-input">
+                          <button className="rounded-md border px-3 py-1">Change</button>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button className="rounded-md px-3 py-2 border" onClick={() => setProfileOpen(false)}>Cancel</button>
+                    <button className="rounded-md bg-primary px-3 py-2 text-primary-foreground" onClick={async () => {
+                      if (!editName.trim() || !editEmail.trim()) { toast.error('Name and email are required'); return; }
+                      const { updateProfile } = await import('@/lib/auth');
+                      const res = await updateProfile({ name: editName.trim(), email: editEmail.trim() });
+                      if (res.ok) {
+                        setCurrentUserState((prev) => prev ? { ...prev, name: editName.trim(), email: editEmail.trim() } : prev);
+                        toast.success('Profile updated');
+                        setProfileOpen(false);
+                      } else {
+                        toast.error(res.message || 'Could not update profile');
+                      }
+                    }}>Save</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <Toaster />
+        <div className="rounded-lg bg-white p-4 shadow-sm">
+          <div className="text-xs text-muted-foreground">Applications</div>
+          <div className="text-2xl font-bold text-foreground">{allBids.length}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">{myBids.length} yours</div>
+        </div>
+        <div className="rounded-lg bg-white p-4 shadow-sm">
+          <div className="text-xs text-muted-foreground">Earnings</div>
+          <div className="text-2xl font-bold text-foreground">{formatInrCompact(totalBidValue)}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">Projected</div>
+        </div>
+        <div className="rounded-lg bg-white p-4 shadow-sm">
+          <div className="text-xs text-muted-foreground">Rating</div>
+          <div className="text-2xl font-bold text-foreground">4.8</div>
+          <div className="text-[11px] text-muted-foreground mt-1">Based on reviews</div>
+        </div>
+      </div>
+
+      {/* Recent Activity & Jobs */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3 mb-8">
+        <div className="lg:col-span-2 space-y-4">
+          <Card className="rounded-lg shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {(chatThreads.c1 || []).slice(-3).reverse().map((m, i) => (
+                  <div key={`act-${i}`} className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">{m.sender === 'me' ? 'ME' : 'AS'}</div>
+                    <div>
+                      <div className="text-sm text-foreground">{m.text}</div>
+                      <div className="text-xs text-muted-foreground">{m.time}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-lg shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recent Jobs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {allJobs.slice(0,4).map((job) => (
+                  <div key={job.id} className="flex items-center justify-between rounded-md p-3 bg-card/30">
+                    <div>
+                      <div className="font-medium text-sm">{job.title}</div>
+                      <div className="text-xs text-muted-foreground">{job.recruiterName} · {job.category}</div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">{job.bidsCount} bids</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card className="rounded-lg shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-2">
+                <Link to="/post-job"><Button variant="hero" className="w-full">Post Job</Button></Link>
+                <Link to="/jobs"><Button variant="outline" className="w-full">Browse Jobs</Button></Link>
+                <Button variant="ghost" className="w-full" onClick={() => { const el = document.getElementById('avatar'); el?.click(); }}>Update Avatar</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
         {role === "freelancer" ? (
           <>
             <StatCard icon={FileText} label="My Bids" value={myBids.length.toString()} note={`${bidsInReview} pending`} />
             <StatCard icon={Briefcase} label="Active Jobs" value={activeJobs.length.toString()} note="Across 2 categories" />
             <StatCard icon={CheckCircle} label="Completed" value={completedJobs.length.toString()} note="Lifetime delivery" />
-            <StatCard icon={DollarSign} label="Bid Value (INR)" value={formatInrCompact(totalBidValue)} note="Current pipeline" />
+            <StatCard icon={TrendingUp} label="Bid Value (INR)" value={formatInrCompact(totalBidValue)} note="Current pipeline" />
           </>
         ) : (
           <>
@@ -171,10 +493,10 @@ function DashboardPage() {
               value={allJobs.filter((j) => j.status === "in-progress").length.toString()}
               note="Current engagements"
             />
-            <StatCard icon={DollarSign} label="Projected Spend" value={formatInrCompact(recruiterSpend)} note="Budget ceiling" />
+            <StatCard icon={Target} label="Projected Spend" value={formatInrCompact(recruiterSpend)} note="Budget ceiling" />
           </>
         )}
-      </div>
+
 
       <div className="mb-8 grid gap-4 lg:grid-cols-3">
         <Card className="gradient-card border-border/50 lg:col-span-2">
@@ -193,21 +515,15 @@ function DashboardPage() {
             <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link to="/profile">
-              <Button variant="secondary" className="w-full justify-start">
-                Update Profile
-              </Button>
-            </Link>
-            <Link to="/chat">
-              <Button variant="secondary" className="w-full justify-start">
-                Open Messages
-              </Button>
-            </Link>
-            <Link to="/jobs">
-              <Button variant="secondary" className="w-full justify-start">
-                Review Opportunities
-              </Button>
-            </Link>
+            <Button variant="secondary" className="w-full justify-start" onClick={() => handleQuickUpdateProfile()}>
+              Update Profile
+            </Button>
+            <Button variant="secondary" className="w-full justify-start" onClick={() => handleQuickOpenMessages()}>
+              Open Messages
+            </Button>
+            <Button variant="secondary" className="w-full justify-start" onClick={() => handleQuickReviewOpportunities()}>
+              Review Opportunities
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -314,7 +630,7 @@ function DashboardPage() {
                             <div>
                               <h3 className="font-semibold text-foreground">{job?.title}</h3>
                               <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />{formatUsdAsInr(bid.amount)}</span>
+                                <span className="flex items-center gap-1">₹{formatUsdAsInr(bid.amount)}</span>
                                 <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{bid.deliveryTime} days</span>
                               </div>
                             </div>
@@ -452,11 +768,16 @@ function DashboardPage() {
                       <p className="text-[11px] text-muted-foreground">{chat.username}</p>
                       <p className="truncate text-xs text-foreground/90">{chat.message}</p>
                     </div>
-                    {chat.unread > 0 && (
-                      <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                        {chat.unread}
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {chatTyping[chat.id] && (
+                        <div className="text-[11px] text-muted-foreground">typing…</div>
+                      )}
+                      {chat.unread > 0 && (
+                        <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                          {chat.unread}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </button>
               ))}
@@ -467,7 +788,7 @@ function DashboardPage() {
                 <p className="text-sm font-semibold">{activeChat.name}</p>
                 <p className="text-[11px] text-muted-foreground">{activeChat.username}</p>
               </div>
-              <div className="max-h-56 space-y-2 overflow-y-auto p-3">
+              <div id="dashboard-messages-container" className="max-h-56 space-y-2 overflow-y-auto p-3">
                 {activeMessages.map((message, index) => (
                   <div key={`${selectedChatId}-${index}`} className={`flex ${message.sender === "me" ? "justify-end" : "justify-start"}`}>
                     <div
@@ -484,6 +805,18 @@ function DashboardPage() {
                     </div>
                   </div>
                 ))}
+                {chatTyping[selectedChatId] && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[60%] rounded-lg px-3 py-2 text-xs bg-muted text-foreground">
+                      <div className="flex items-center gap-1">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse delay-75" />
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse delay-150" />
+                        <div className="ml-2 text-[11px] text-muted-foreground">typing...</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <form
                 className="flex gap-2 border-t border-border/50 p-2"
@@ -493,6 +826,7 @@ function DashboardPage() {
                 }}
               >
                 <Input
+                  id="dashboard-chat-input"
                   value={chatInput}
                   onChange={(event) => setChatInput(event.target.value)}
                   placeholder="Type message..."

@@ -3,6 +3,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const JOBS_KEY = "eruka_posted_jobs";
 const BIDS_KEY = "eruka_bids";
+const MESSAGES_KEY = "eruka_messages";
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -135,6 +136,59 @@ export async function saveBid(bid: Bid) {
 
   // For local fallback, prepend the new bid
   writeJson(BIDS_KEY, [bid, ...getSavedBids()]);
+
+  // simulate acceptance after 10s for realism
+  if (bid.status === 'pending') {
+    setTimeout(async () => {
+      // mark accepted
+      const accepted = { ...bid, status: 'accepted' } as Bid;
+      await upsertBid(accepted);
+
+      // create a message from client (job owner) to freelancer
+      const jobs = getAllJobs();
+      const job = jobs.find((j) => j.id === bid.jobId);
+      const clientId = job?.recruiterId || 'client';
+      const message = {
+        id: `msg-${Date.now()}`,
+        senderId: clientId,
+        receiverId: bid.freelancerId,
+        text: `Hi ${bid.freelancerName}, we'd like to accept your bid for ${job?.title || 'the job'}. Let's discuss next steps.`,
+        createdAt: new Date().toISOString(),
+      };
+      // save message
+      await saveMessage(message as any);
+
+      // notify UI listeners
+      try {
+        window.dispatchEvent(new CustomEvent('eruka:bid-updated', { detail: { bidId: bid.id } }));
+        window.dispatchEvent(new CustomEvent('eruka:message-inserted', { detail: { messageId: message.id } }));
+      } catch {}
+    }, 10000);
+  }
+}
+
+export function getSavedMessages() {
+  return readJson<any[]>(MESSAGES_KEY, []);
+}
+
+export async function fetchMessagesForUser(userId: string) {
+  if (!isSupabaseConfigured || !supabase) return getSavedMessages().filter(m => m.senderId === userId || m.receiverId === userId);
+
+  const { data, error } = await supabase.from('messages').select('*').or(`sender_id.eq.${userId},receiver_id.eq.${userId}`).order('created_at', { ascending: true });
+  if (error || !data) return getSavedMessages().filter(m => m.senderId === userId || m.receiverId === userId);
+  return data.map((m) => ({ id: m.id, senderId: m.sender_id, receiverId: m.receiver_id, text: m.message, createdAt: m.created_at }));
+}
+
+export async function saveMessage(msg: { id: string; senderId: string; receiverId: string; text: string; createdAt?: string }) {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('messages').insert({ id: msg.id, sender_id: msg.senderId, receiver_id: msg.receiverId, message: msg.text });
+      return;
+    } catch {}
+  }
+
+  // local fallback
+  writeJson(MESSAGES_KEY, [{ id: msg.id, senderId: msg.senderId, receiverId: msg.receiverId, text: msg.text, createdAt: msg.createdAt || new Date().toISOString() }, ...getSavedMessages()]);
 }
 
 export async function upsertBid(bid: Bid) {

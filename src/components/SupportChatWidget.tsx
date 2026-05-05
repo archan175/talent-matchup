@@ -2,6 +2,8 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { MessageCircle, Send, X, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { generateSmartReply } from "@/lib/reply";
+import { getCurrentUser } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 
 type ChatMessage = {
@@ -20,44 +22,31 @@ const quickPrompts = [
 function getSupportReply(message: string) {
   const msg = message.toLowerCase();
 
-  if (msg.includes("login") || msg.includes("log in") || msg.includes("sign in")) {
-    return "Please go to Login, enter your registered email and password, then submit. If credentials fail, re-check spelling or create a new account from Sign Up.";
-  }
-
-  if (msg.includes("signup") || msg.includes("sign up") || msg.includes("register")) {
-    return "Open Sign Up, choose role (Freelancer/Recruiter), enter name/email/password, and submit. You will be automatically logged in and redirected to your profile.";
-  }
-
-  if (msg.includes("post") || msg.includes("job")) {
-    return "Go to Post Job in the header, fill title/description/budget/deadline/skills, then submit. Your job listing will appear in Browse Jobs.";
-  }
-
-  if (msg.includes("bid") || msg.includes("apply")) {
-    return "Open Browse Jobs, select a job, and submit a bid with your proposal, amount, and delivery timeline.";
-  }
-
-  if (msg.includes("profile") || msg.includes("account")) {
-    return "Use the profile page to view your account details. If blocked, make sure you are logged in first.";
-  }
-
-  return "I can help with login, signup, posting jobs, bidding, and profile issues. Please tell me what problem you are facing in one line.";
+  return generateSmartReply(message);
 }
 
 export function SupportChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      sender: "support",
-      text: "Hi, I am ERUKA Support. Ask me anything about login, signup, jobs, or bids.",
-    },
-  ]);
+  const currentUser = getCurrentUser();
+  const STORAGE_KEY = currentUser ? `eruka_support_${currentUser.email}` : 'eruka_support_guest';
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [ { id: 'welcome', sender: 'support', text: 'Hi, I am ERUKA Support. Ask me anything about login, signup, jobs, or bids.' } ];
+    try { return JSON.parse(raw) as ChatMessage[]; } catch { return []; }
+  });
 
   const canSend = useMemo(() => input.trim().length > 0, [input]);
 
   const replyTimersRef = useRef<number[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [typingLabel, setTypingLabel] = useState<string>('ERUKA is typing');
+  const messagesRef = useRef<ChatMessage[]>(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     return () => {
@@ -66,6 +55,11 @@ export function SupportChatWidget() {
       replyTimersRef.current = [];
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
 
   const clearPendingReplies = () => {
     replyTimersRef.current.forEach((t) => clearTimeout(t));
@@ -83,23 +77,37 @@ export function SupportChatWidget() {
       text: cleanText,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      const next = [...prev, userMessage];
+      if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
     setInput("");
-
-    // schedule a simulated support reply after a random 15-30s delay
-    const min = 15000;
-    const max = 30000;
+    // schedule a simulated support reply after a shorter 2-4s delay and ensure we include the new message in history
+    const min = 2000;
+    const max = 4000;
     const delay = Math.floor(Math.random() * (max - min + 1)) + min;
 
-    setIsTyping(true);
-    const timer = window.setTimeout(() => {
+  // always show ERUKA as the typing persona for live support
+  setTypingLabel('ERUKA is typing');
+  setIsTyping(true);
+
+    // build history including the just-sent message using messagesRef to avoid stale closures
+    const historyNow = [...messagesRef.current, userMessage].map((m) => m.text);
+
+    const timer = window.setTimeout(async () => {
+      const reply = generateSmartReply(cleanText, { role: currentUser?.role, history: historyNow });
       const supportMessage: ChatMessage = {
         id: `${Date.now()}-s`,
         sender: "support",
-        text: getSupportReply(cleanText),
+        text: reply,
       };
 
-      setMessages((prev) => [...prev, supportMessage]);
+      setMessages((prev) => {
+        const next = [...prev, supportMessage];
+        if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
       setIsTyping(false);
       // remove this timer from the ref
       replyTimersRef.current = replyTimersRef.current.filter((t) => t !== timer);
@@ -149,8 +157,13 @@ export function SupportChatWidget() {
                 </div>
               ))}
               {isTyping && (
-                <div className="max-w-[65%] animate-pulse rounded-lg px-3 py-2 text-xs bg-card/80 text-foreground border border-border/40">
-                  ERUKA is typing...
+                <div className="max-w-[65%] rounded-lg px-3 py-2 text-xs bg-card/80 text-foreground border border-border/40">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse delay-75" />
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground animate-pulse delay-150" />
+                    <div className="ml-2 text-[11px] text-muted-foreground">{typingLabel}</div>
+                  </div>
                 </div>
               )}
             </div>

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Clock, DollarSign, Users, ArrowDown } from "lucide-react";
+import { Clock, Users, ArrowDown } from "lucide-react";
 import type { Job } from "@/lib/mock-data";
 import { getLowestBid } from "@/lib/mock-data";
 import { formatUsdAsInr } from "@/lib/currency";
@@ -51,7 +51,7 @@ export function JobCard({ job }: { job: Job }) {
 
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <DollarSign className="h-3.5 w-3.5" />
+              <span className="text-[13px]">₹</span>
               <span>{formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -70,7 +70,7 @@ export function JobCard({ job }: { job: Job }) {
                 <span>{job.deadline}</span>
               </div>
               <div>
-                <button className="ml-2 rounded-md bg-primary text-white px-3 py-1 text-sm hover:opacity-95">Apply</button>
+                <button className="ml-2 rounded-md bg-primary text-white px-3 py-1 text-sm hover:opacity-95">Place bid</button>
               </div>
             </div>
           </div>

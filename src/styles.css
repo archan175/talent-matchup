@@ -152,6 +152,19 @@
   .rounded-card { border-radius: 12px; }
   .soft-shadow { box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
 
+  /* Button defaults */
+  .btn-primary {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--glow-primary); }
+
+  /* Card default */
+  .card-default { background: var(--card); border-radius: 12px; box-shadow: 0 8px 24px rgba(15,23,42,0.06); }
+
   /* Skeleton loader */
   .skeleton { background: linear-gradient(90deg, #f0f0f0 0%, #e8eef8 50%, #f0f0f0 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
   @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }

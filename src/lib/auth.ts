@@ -71,6 +71,22 @@ function saveCurrentUser(user: AuthUser) {
   if (!isBrowser()) return;
   window.localStorage.setItem(PROFILE_KEY, JSON.stringify(user));
   window.localStorage.setItem(SESSION_KEY, user.email.trim().toLowerCase());
+
+  try {
+    // Also keep the registered users list in sync so getCurrentUser can find the profile
+    const users = getRegisteredUsers();
+    const normalized = user.email.trim().toLowerCase();
+    const existingIndex = users.findIndex((u) => u.id === user.id || u.email.toLowerCase() === normalized);
+    const toSave: AuthUser = { ...user, email: normalized };
+    if (existingIndex >= 0) {
+      users[existingIndex] = toSave;
+    } else {
+      users.unshift(toSave);
+    }
+    saveRegisteredUsers(users);
+  } catch (e) {
+    // best-effort only
+  }
 }
 
 function getAppOrigin() {
@@ -317,4 +333,35 @@ export function getCurrentUser(): AuthUser | null {
 
   const users = getRegisteredUsers();
   return users.find((user) => user.email.toLowerCase() === currentEmail.toLowerCase()) ?? null;
+}
+
+export async function updateProfile(changes: Partial<AuthUser>) {
+  if (!isBrowser()) return { ok: false as const, message: "Not running in browser." };
+
+  const current = getCurrentUser();
+  const updated: AuthUser = {
+    id: (current && current.id) || changes.id || `user-${Date.now()}`,
+    name: changes.name || current?.name || "",
+    email: (changes.email || current?.email || "").trim().toLowerCase(),
+    role: (changes.role as UserRole) || current?.role || "freelancer",
+    password: changes.password || current?.password,
+  };
+
+  // persist to Supabase if available
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from("profiles").upsert({
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      role: updated.role,
+    });
+
+    if (error) {
+      return { ok: false as const, message: mapSupabaseError(error) };
+    }
+  }
+
+  // save locally
+  saveCurrentUser(updated);
+  return { ok: true as const };
 }

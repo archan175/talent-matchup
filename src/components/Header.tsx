@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Briefcase, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { getCurrentUser, logoutUser } from "@/lib/auth";
@@ -18,13 +18,13 @@ export function Header() {
   const currentUser = getCurrentUser();
 
   return (
-    <header className="sticky top-0 z-50 bg-white/60 backdrop-blur-md border-b shadow-sm">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-            <Briefcase className="h-5 w-5" />
+            <span className="text-sm font-bold">TM</span>
           </div>
-          <span className="text-lg font-semibold text-secondary">ERUKA</span>
+          <span className="text-lg font-semibold text-foreground">TalentMatch</span>
         </Link>
 
   <nav className="hidden items-center gap-1 md:flex">
