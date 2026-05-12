@@ -33,9 +33,9 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-            <span className="text-sm font-bold">TM</span>
+            <span className="text-sm font-bold">E</span>
           </div>
-          <span className="text-lg font-semibold text-foreground">TalentMatch</span>
+          <span className="text-lg font-semibold text-foreground">ERUKA</span>
         </Link>
 
   <nav className="hidden items-center gap-1 md:flex">

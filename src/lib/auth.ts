@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { BUILD_COMMIT } from "@/lib/buildInfo";
 
 export type UserRole = "freelancer" | "recruiter";
 
@@ -93,6 +94,16 @@ function saveCurrentUser(user: AuthUser) {
     saveRegisteredUsers(users);
   } catch (e) {
     // best-effort only
+  }
+  try {
+    // Persist the build stamp on login/save so the client can detect mismatched builds
+    if (BUILD_COMMIT) {
+      window.localStorage.setItem('eruka_build', String(BUILD_COMMIT));
+      // eslint-disable-next-line no-console
+      console.debug('[auth] saveCurrentUser set eruka_build', BUILD_COMMIT);
+    }
+  } catch (e) {
+    // ignore
   }
   try {
     // notify the UI that auth state changed so non-mounted components can refresh

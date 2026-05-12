@@ -59,6 +59,24 @@ function DashboardPage() {
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem("eruka_avatar");
   });
+  // keep avatar and current user in sync when auth/profile updates elsewhere
+  useEffect(() => {
+    function onAuthChanged(e: any) {
+      try {
+        const next = getCurrentUser();
+        setCurrentUserState(next);
+        if (typeof window !== 'undefined') {
+          setAvatarData(window.localStorage.getItem('eruka_avatar'));
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    window.addEventListener('eruka:auth-changed', onAuthChanged);
+    return () => window.removeEventListener('eruka:auth-changed', onAuthChanged);
+  }, []);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const profileAvatarInputRef = useRef<HTMLInputElement | null>(null);
   const [allJobs, setAllJobs] = useState<Job[]>(getAllJobs());
   const [allBids, setAllBids] = useState<Bid[]>(getAllBids());
   const [postedJobRecords, setPostedJobRecords] = useState<Job[]>(getPostedJobs());
@@ -243,14 +261,21 @@ function DashboardPage() {
                   ) : (
                     <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">{(currentUserState?.name || "U").split(" ").map(p=>p[0]).join("").slice(0,2)}</div>
                   )}
-                  <input id="avatar" type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                    const file = e.target.files?.[0];
+                  <input ref={avatarInputRef} id="avatar" type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const input = e.target as HTMLInputElement;
+                    const file = input.files?.[0];
                     if (!file) return;
                     const reader = new FileReader();
                     reader.onload = async () => {
                       const base = String(reader.result || "");
-                      window.localStorage.setItem('eruka_avatar', base);
-                      setAvatarData(base);
+                      try {
+                        window.localStorage.setItem('eruka_avatar', base);
+                        setAvatarData(base);
+                      } catch (err) {
+                        // ignore storage errors
+                      }
+                      // clear the input so the same file can be selected again
+                      try { input.value = ''; } catch (e) {}
                     };
                     reader.readAsDataURL(file);
                   }} />
@@ -259,9 +284,7 @@ function DashboardPage() {
                   <div className="text-sm font-semibold">{currentUserState?.name || "Your Name"}</div>
                   <div className="text-xs text-muted-foreground">{currentUserState?.email || "you@example.com"}</div>
                   <div className="mt-2 flex gap-2">
-                    <label htmlFor="avatar">
-                      <Button size="sm" variant="outline">Change Avatar</Button>
-                    </label>
+                    <Button size="sm" variant="outline" onClick={() => avatarInputRef.current?.click() }>Change Avatar</Button>
                     <Button size="sm" variant="ghost" onClick={() => {
                       setEditName(currentUserState?.name || "");
                       setEditEmail(currentUserState?.email || "");
@@ -333,7 +356,7 @@ function DashboardPage() {
                       <label className="text-sm">Avatar</label>
                       <div className="mt-2 flex items-center gap-3">
                         {avatarData ? <img src={avatarData} className="h-12 w-12 rounded-full object-cover" alt="avatar" /> : <div className="h-12 w-12 rounded-full bg-muted" />}
-                        <input id="profile-avatar-input" type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        <input ref={profileAvatarInputRef} id="profile-avatar-input" type="file" accept="image/*" className="hidden" onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           setUploadingAvatar(true);
@@ -352,21 +375,25 @@ function DashboardPage() {
                                     window.localStorage.setItem('eruka_avatar', urlData.publicUrl);
                                     setAvatarData(urlData.publicUrl);
                                     toast.success('Avatar uploaded');
+                                    try { (profileAvatarInputRef.current as HTMLInputElement).value = ''; } catch(e) {}
                                   } else {
                                     // fallback to base64
                                     window.localStorage.setItem('eruka_avatar', base);
                                     setAvatarData(base);
                                     toast('Avatar saved locally');
+                                    try { (profileAvatarInputRef.current as HTMLInputElement).value = ''; } catch(e) {}
                                   }
                                 } catch (err) {
                                   window.localStorage.setItem('eruka_avatar', base);
                                   setAvatarData(base);
                                   toast('Avatar saved locally');
+                                  try { (profileAvatarInputRef.current as HTMLInputElement).value = ''; } catch(e) {}
                                 }
                               } else {
                                 window.localStorage.setItem('eruka_avatar', base);
                                 setAvatarData(base);
                                 toast('Avatar saved locally');
+                                try { (profileAvatarInputRef.current as HTMLInputElement).value = ''; } catch(e) {}
                               }
                               setUploadingAvatar(false);
                             };
@@ -376,9 +403,7 @@ function DashboardPage() {
                             toast.error('Could not upload avatar');
                           }
                         }} />
-                        <label htmlFor="profile-avatar-input">
-                          <button className="rounded-md border px-3 py-1">Change</button>
-                        </label>
+                        <button className="rounded-md border px-3 py-1" onClick={() => profileAvatarInputRef.current?.click() }>Change</button>
                       </div>
                     </div>
                   </div>
