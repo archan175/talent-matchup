@@ -4,13 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BidCard } from "@/components/BidCard";
 import { mockBids, mockJobs, type Bid, type Job } from "@/lib/mock-data";
 import { fetchPostedJobs, fetchSavedBids, getAllBids, getAllJobs, saveBid } from "@/lib/local-data";
 import { getCurrentUser } from "@/lib/auth";
 import { formatUsdAsInr } from "@/lib/currency";
-import { ArrowLeft, Clock, Users, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users } from "lucide-react";
 
 export const Route = createFileRoute("/jobs/$jobId")({
   head: ({ params }) => {
@@ -18,7 +25,10 @@ export const Route = createFileRoute("/jobs/$jobId")({
     return {
       meta: [
         { title: job ? `${job.title} — ERUKA` : "Job Not Found — ERUKA" },
-        { name: "description", content: job?.description?.slice(0, 155) || "Job details on ERUKA" },
+        {
+          name: "description",
+          content: job?.description?.slice(0, 155) || "Job details on ERUKA",
+        },
       ],
     };
   },
@@ -40,7 +50,8 @@ function JobDetailPage() {
   const job = jobs.find((j) => j.id === jobId);
   const bids = allBids.filter((b) => b.jobId === jobId);
   const lowestBid = bids.length > 0 ? Math.min(...bids.map((bid) => bid.amount)) : null;
-  const lowestBidId = bids.length > 0 ? bids.reduce((a, b) => (a.amount < b.amount ? a : b)).id : null;
+  const lowestBidId =
+    bids.length > 0 ? bids.reduce((a, b) => (a.amount < b.amount ? a : b)).id : null;
 
   const [bidOpen, setBidOpen] = useState(false);
   const [bidAmount, setBidAmount] = useState("");
@@ -72,17 +83,17 @@ function JobDetailPage() {
       onBidUpdated();
     };
 
-    window.addEventListener('eruka:bid-updated', onBidUpdated);
-    window.addEventListener('eruka:message-inserted', onMessageInserted);
+    window.addEventListener("eruka:bid-updated", onBidUpdated);
+    window.addEventListener("eruka:message-inserted", onMessageInserted);
     return () => {
-      window.removeEventListener('eruka:bid-updated', onBidUpdated);
-      window.removeEventListener('eruka:message-inserted', onMessageInserted);
+      window.removeEventListener("eruka:bid-updated", onBidUpdated);
+      window.removeEventListener("eruka:message-inserted", onMessageInserted);
     };
   }, []);
 
   if (!job) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-20 text-center">
+      <div className="mx-auto max-w-[1200px] px-4 py-20 text-center">
         <h1 className="text-2xl font-bold">Job not found</h1>
         <Link to="/jobs" className="mt-4 inline-block text-primary hover:underline">
           Back to jobs
@@ -92,14 +103,17 @@ function JobDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <Link to="/jobs" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+    <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
+      <Link
+        to="/jobs"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to jobs
       </Link>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
           <div>
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-2xl font-bold sm:text-3xl">{job.title}</h1>
@@ -112,19 +126,21 @@ function JobDetailPage() {
             </p>
           </div>
 
-          <Card className="gradient-card border-border/50">
+          <Card className="rounded-xl border-border/70 bg-white shadow-sm">
             <CardContent className="p-6">
-              <h2 className="text-base font-semibold mb-3">Description</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">{job.description}</p>
+              <h2 className="mb-3 text-base font-semibold">Description</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">{job.description}</p>
             </CardContent>
           </Card>
 
-          <Card className="gradient-card border-border/50">
+          <Card className="rounded-xl border-border/70 bg-white shadow-sm">
             <CardContent className="p-6">
-              <h2 className="text-base font-semibold mb-3">Required Skills</h2>
+              <h2 className="mb-3 text-base font-semibold">Required Skills</h2>
               <div className="flex flex-wrap gap-2">
                 {job.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary">{skill}</Badge>
+                  <Badge key={skill} variant="secondary">
+                    {skill}
+                  </Badge>
                 ))}
               </div>
             </CardContent>
@@ -132,7 +148,7 @@ function JobDetailPage() {
 
           {/* Bids Section */}
           <div>
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="mb-4 text-xl font-bold">
               Bids ({bids.length})
               {lowestBid && (
                 <span className="ml-3 text-sm font-normal text-success">
@@ -154,26 +170,41 @@ function JobDetailPage() {
                       await import("@/lib/local-data").then((m) => m.upsertBid(updatedBid));
 
                       // update local state: mark other bids as rejected
-                      setAllBids((current) => current.map((b) => (b.id === bid.id ? updatedBid : { ...b, status: b.id === bid.id ? "accepted" : "rejected" })));
+                      setAllBids((current) =>
+                        current.map((b) =>
+                          b.id === bid.id
+                            ? updatedBid
+                            : { ...b, status: b.id === bid.id ? "accepted" : "rejected" },
+                        ),
+                      );
 
                       // update job to assigned freelancer and status
-                      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, assignedFreelancerId: bid.freelancerId, status: "in-progress" } : j)));
+                      const updatedJob: Job = {
+                        ...job,
+                        assignedFreelancerId: bid.freelancerId,
+                        status: "in-progress",
+                      };
+                      setJobs((prev) => prev.map((j) => (j.id === job.id ? updatedJob : j)));
                       // persist job change
-                      await import("@/lib/local-data").then((m) => m.savePostedJob({ ...(job as any), assignedFreelancerId: bid.freelancerId, status: "in-progress" }));
+                      await import("@/lib/local-data").then((m) => m.savePostedJob(updatedJob));
 
                       // refresh bids in UI
-                      setAllBids((current) => current.map((b) => (b.id === bid.id ? { ...b, status: "accepted" } : b)));
+                      setAllBids((current) =>
+                        current.map((b) => (b.id === bid.id ? { ...b, status: "accepted" } : b)),
+                      );
                     }}
                     onReject={async () => {
                       const updatedBid = { ...bid, status: "rejected" } as const;
                       await import("@/lib/local-data").then((m) => m.upsertBid(updatedBid));
-                      setAllBids((current) => current.map((b) => (b.id === bid.id ? updatedBid : b)));
+                      setAllBids((current) =>
+                        current.map((b) => (b.id === bid.id ? updatedBid : b)),
+                      );
                     }}
                   />
                 ))}
               </div>
             ) : (
-              <Card className="gradient-card border-border/50">
+              <Card className="rounded-xl border-border/70 bg-white shadow-sm">
                 <CardContent className="p-8 text-center">
                   <p className="text-muted-foreground">No bids yet. Be the first to bid!</p>
                 </CardContent>
@@ -184,13 +215,15 @@ function JobDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-5">
-          <Card className="gradient-card border-border/50 sticky top-20">
-            <CardContent className="p-6 space-y-5">
+          <Card className="sticky top-20 rounded-xl border-border/70 bg-white shadow-sm">
+            <CardContent className="space-y-5 p-6">
               <div className="flex items-center gap-2">
                 <span className="text-primary text-lg">₹</span>
                 <div>
                   <p className="text-xs text-muted-foreground">Budget</p>
-                  <p className="text-lg font-bold">{formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}</p>
+                  <p className="text-lg font-bold">
+                    {formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -238,12 +271,10 @@ function JobDetailPage() {
 
       {/* Bid Modal */}
       <Dialog open={bidOpen} onOpenChange={setBidOpen}>
-        <DialogContent className="gradient-card border-border/50">
+        <DialogContent className="rounded-xl border-border/70 bg-white">
           <DialogHeader>
             <DialogTitle>Place Your Bid</DialogTitle>
-            <DialogDescription>
-              Submit your proposal for "{job.title}"
-            </DialogDescription>
+            <DialogDescription>Submit your proposal for "{job.title}"</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
@@ -282,7 +313,9 @@ function JobDetailPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setBidOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setBidOpen(false)}>
+              Cancel
+            </Button>
             <Button
               variant="hero"
               onClick={async () => {

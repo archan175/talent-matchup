@@ -24,13 +24,13 @@ export function Header() {
       // force re-render to pick up updated getCurrentUser()
       setTick((t) => t + 1);
     }
-    window.addEventListener('eruka:auth-changed', onAuth);
-    return () => window.removeEventListener('eruka:auth-changed', onAuth);
+    window.addEventListener("eruka:auth-changed", onAuth);
+    return () => window.removeEventListener("eruka:auth-changed", onAuth);
   }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
             <span className="text-sm font-bold">E</span>
@@ -38,7 +38,7 @@ export function Header() {
           <span className="text-lg font-semibold text-foreground">ERUKA</span>
         </Link>
 
-  <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.to}
@@ -54,7 +54,7 @@ export function Header() {
           ))}
         </nav>
 
-  <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           {currentUser ? (
             <>
               <Link to="/profile">
