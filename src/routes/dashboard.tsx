@@ -558,31 +558,11 @@ function DashboardPage() {
           <CardTitle className="text-base">Stored Data</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="logins" className="space-y-4">
+          <Tabs defaultValue="jobs" className="space-y-4">
             <TabsList className="bg-card border border-border/50">
-              <TabsTrigger value="logins">Logins</TabsTrigger>
               <TabsTrigger value="jobs">Post Jobs</TabsTrigger>
               <TabsTrigger value="bids">Bids</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="logins">
-              <div className="space-y-2">
-                {registeredUsers.length > 0 ? registeredUsers.map((user) => (
-                  <div key={user.email} className="rounded-lg border border-border/50 bg-card/40 p-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-medium">{user.name}</p>
-                      <Badge variant="secondary">{user.role}</Badge>
-                    </div>
-                    <p className="mt-1 text-muted-foreground">Email: {user.email}</p>
-                    <p className="text-muted-foreground">Password: secured by Supabase Auth</p>
-                  </div>
-                )) : (
-                  <p className="rounded-lg border border-border/50 bg-card/40 p-4 text-sm text-muted-foreground">
-                    No signup records yet.
-                  </p>
-                )}
-              </div>
-            </TabsContent>
 
             <TabsContent value="jobs">
               <div className="space-y-2">
