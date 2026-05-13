@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ArrowDown, Clock, Users } from "lucide-react";
+import { Clock, Users, ArrowDown } from "lucide-react";
 import type { Job } from "@/lib/mock-data";
 import { getLowestBid } from "@/lib/mock-data";
 import { formatUsdAsInr } from "@/lib/currency";
@@ -17,11 +17,11 @@ export function JobCard({ job }: { job: Job }) {
 
   return (
     <Link to="/jobs/$jobId" params={{ jobId: job.id }}>
-      <Card className="group h-full cursor-pointer rounded-xl border border-border/70 bg-white shadow-sm transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-md">
+      <Card className="group bg-white rounded-lg shadow-sm border border-border/50 transition-transform transform hover:-translate-y-1 hover:shadow-md cursor-pointer">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h3 className="truncate text-base font-semibold text-foreground transition-colors group-hover:text-primary">
+              <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                 {job.title}
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -33,7 +33,7 @@ export function JobCard({ job }: { job: Job }) {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="flex h-full flex-col gap-4">
+        <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
 
           <div className="flex flex-wrap gap-1.5">
@@ -49,11 +49,12 @@ export function JobCard({ job }: { job: Job }) {
             )}
           </div>
 
-          <div className="mt-auto grid gap-4 border-t border-border/50 pt-4">
-            <div className="text-sm font-semibold text-foreground">
-              {formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="text-[13px]">₹</span>
+              <span>{formatUsdAsInr(job.budgetMin)} – {formatUsdAsInr(job.budgetMax)}</span>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               {lowestBid && (
                 <div className="flex items-center gap-1 text-xs text-success">
                   <ArrowDown className="h-3 w-3" />
@@ -68,9 +69,9 @@ export function JobCard({ job }: { job: Job }) {
                 <Clock className="h-3.5 w-3.5" />
                 <span>{job.deadline}</span>
               </div>
-              <span className="ml-auto rounded-md bg-primary px-3 py-1 text-sm text-white transition-opacity group-hover:opacity-90">
-                Place bid
-              </span>
+              <div>
+                <button className="ml-2 rounded-md bg-primary text-white px-3 py-1 text-sm hover:opacity-95">Place bid</button>
+              </div>
             </div>
           </div>
         </CardContent>
