@@ -29,13 +29,13 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-            <span className="text-sm font-bold">E</span>
+    <header className="sticky top-4 z-[90] mx-4 md:mx-auto max-w-7xl bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] mt-4 mb-4 transition-all duration-300">
+      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-md group-hover:scale-105 transition-transform">
+            <span className="text-xs font-black">E</span>
           </div>
-          <span className="text-lg font-semibold text-foreground">ERUKA</span>
+          <span className="text-lg font-black tracking-tight text-foreground">ERUKA</span>
         </Link>
 
   <nav className="hidden items-center gap-1 md:flex">

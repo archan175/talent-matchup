@@ -108,7 +108,10 @@ function RootComponent() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col relative selection:bg-primary/20 selection:text-primary">
+      {/* Global Grain Overlay for cinematic feel */}
+      <div className="pointer-events-none fixed inset-0 z-[9999] opacity-[0.035] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      
       <Header />
       <main className="flex-1">
         <Outlet />
